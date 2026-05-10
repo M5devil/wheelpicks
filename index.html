@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v13-SUPABASE</title>
+<title>WheelPicks v14-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v13</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v14</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -762,19 +762,14 @@ function setExp(i){
   document.querySelectorAll(".exp-tab").forEach(function(t,idx){
     t.classList.toggle("active",idx===i);
   });
-  // Show updating state right away so user knows something changed
-  var exp=EXPIRATIONS[i];
+  // Dim existing rows to signal loading without clearing them
+  var chainRows=document.getElementById("chain-rows");
+  if(chainRows) chainRows.style.opacity="0.4";
   var dteLbl=document.getElementById("greeks-dte-label");
-  if(dteLbl) dteLbl.textContent="— "+exp.label+" · Updating...";
-  document.getElementById("greeks-rows").innerHTML=
-    '<div style="grid-column:span 2;text-align:center;padding:10px;color:#475569;font-size:12px">Updating for '+exp.label+'...</div>';
-  document.getElementById("trade-idea-grid").innerHTML=
-    '<div style="text-align:center;padding:20px;color:#475569;font-size:13px">Loading '+exp.label+' trade idea...</div>';
-  document.getElementById("chain-rows").innerHTML=
-    '<div style="color:#475569;font-size:12px;padding:16px;text-align:center">Loading '+exp.label+' options...</div>';
-  // Fetch fresh data for this expiration
+  if(dteLbl) dteLbl.textContent="— "+EXPIRATIONS[i].label+" · Updating...";
+  // Fetch fresh data - will replace content when ready
   if(state.currentStock){
-    loadChainForExp(state.currentStock,exp);
+    loadChainForExp(state.currentStock,EXPIRATIONS[i]);
   }
 }
 
@@ -964,8 +959,12 @@ function renderRealChain(stock,data,mode,exp){
 }
 
 function loadChainForExp(stock,exp){
-  document.getElementById("chain-rows").innerHTML='<div style="color:#475569;font-size:12px;padding:16px;text-align:center">Loading live options...</div>';
   var baseKey=stock.ticker+"_0";
+
+  function restoreOpacity(){
+    var chainRows=document.getElementById("chain-rows");
+    if(chainRows) chainRows.style.opacity="1";
+  }
 
   function doFetch(){
     var expTs=null;
@@ -995,6 +994,7 @@ function loadChainForExp(stock,exp){
         var note=document.getElementById("chain-note");
         if(note) note.textContent=stock.ticker+" at $"+stock.price+" · Calculated (live unavailable)";
       }
+      restoreOpacity();
     });
   }
 
