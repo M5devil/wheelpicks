@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v10-SUPABASE</title>
+<title>WheelPicks v12-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v10</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v12</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -722,26 +722,36 @@ function renderDetail(){
   document.getElementById("chain-cc-btn").className="toggle-btn"+(state.chainMode==="cc"?" active":"");
 }
 
-function renderChainRows(stock,vals,dteFactor){
+function renderChainRows(stock,vals,dteFactor,expDte){
+  var exp=EXPIRATIONS[state.activeExp];
   var html="";
+  var bestIdx=3; // default to 4th strike (closest to stock price)
   vals.strikes.forEach(function(strike,i){
     var prem=Math.max(0.01,parseFloat((vals.basePremiums[i]*dteFactor).toFixed(2)));
     var roc=parseFloat(((prem/strike)*100).toFixed(2));
-    var dv=parseFloat((0.79-i*0.17).toFixed(2));
-    var delta=state.chainMode==="csp"?("-"+dv):("+"+dv);
-    var iv=(30+i*1.2).toFixed(1);
+    var otmP=(stock.price-strike)/Math.max(stock.price,0.01);
+    var dv=parseFloat((0.5*Math.exp(-otmP*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
+    dv=Math.max(0.02,Math.min(0.65,dv));
+    var delta=state.chainMode==="csp"?(-dv).toFixed(2):("+"+dv.toFixed(2));
+    var ivNum=Math.max(8,Math.min(150,parseFloat(((prem/Math.max(stock.price,0.01))*Math.sqrt(365/exp.dte)*100).toFixed(1))));
+    var theta=parseFloat(((prem/exp.dte)*-1).toFixed(3));
     var ois=[36,144,519,8800,628];
-    var oi=ois[i];
+    var oi=ois[i]||0;
     var oiStr=oi>=1000?parseFloat((oi/1000).toFixed(1))+"K":oi;
-    var rocC=roc>3?"#22c55e":"#86efac";
-    html+='<div class="chain-row'+(i===3?" highlight":"")+'">'
-      +'<span style="color:#e2e8f0;font-weight:700">$'+strike+'</span>'
+    var isBest=i===bestIdx;
+    var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
+    var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
+    var star=isBest?' <span style="color:#fbbf24">★</span>':"";
+    html+='<div class="chain-row" style="background:'+rowBg+';border-left:'+(isBest?"3px solid #f59e0b":"3px solid transparent")+'">'
+      +'<span style="color:'+(isBest?"#fbbf24":isATM?"#f1f5f9":"#e2e8f0")+';font-weight:'+(isBest||isATM?"800":"700")+'">$'+strike+star+'</span>'
       +'<span style="color:#22c55e;font-weight:700">$'+prem+'</span>'
-      +'<span style="color:'+rocC+';font-weight:700">'+roc+'%</span>'
+      +'<span style="color:'+(roc>3?"#22c55e":"#86efac")+';font-weight:700">'+roc+'%</span>'
       +'<span style="color:#94a3b8">'+delta+'</span>'
-      +'<span style="color:#94a3b8">'+iv+'%</span>'
+      +'<span style="color:#94a3b8">'+theta+'</span>'
+      +'<span style="color:#94a3b8">'+ivNum+'%</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
       +'</div>';
+    if(isBest) updateTradeIdea(stock,strike,prem,delta,theta,ivNum+"%",exp.label,exp.dte);
   });
   document.getElementById("chain-rows").innerHTML=html;
 }
@@ -787,18 +797,24 @@ function fetchRealChain(ticker,expTs,callback){
   .then(function(r){return r.json();})
   .then(function(d){
     try{
-      var result=d.optionChain.result[0];
+      // Yahoo returns optionChain.result[] wrapper
+      var chain=d.optionChain||d;
+      var results=chain.result||[];
+      if(!results.length) throw new Error("no results");
+      var result=results[0];
+      var opts=result.options&&result.options[0]||{};
       var data={
-        puts:result.options[0].puts||[],
-        calls:result.options[0].calls||[],
+        puts:opts.puts||[],
+        calls:opts.calls||[],
         expirations:result.expirationDates||[],
-        price:result.quote.regularMarketPrice
+        price:(result.quote&&result.quote.regularMarketPrice)||0
       };
+      if(!data.puts.length&&!data.calls.length) throw new Error("empty chain");
       optionsCache[cacheKey]=data;
       if(!optionsCache[ticker+"_0"]) optionsCache[ticker+"_0"]=data;
       callback(data);
     }catch(e){
-      console.log("Options parse error:",e.message, JSON.stringify(d).substring(0,200));
+      console.log("Options parse error:",e.message, JSON.stringify(d).substring(0,300));
       callback(null);
     }
   })
@@ -852,10 +868,11 @@ function updateTradeIdea(stock, strike, prem, delta, theta, iv, expLabel, expDte
   }).join("");
 }
 
-function renderRealChain(stock,data,mode){
+function renderRealChain(stock,data,mode,exp){
   if(!data) return false;
   var contracts=mode==="csp"?data.puts:data.calls;
   if(!contracts||!contracts.length) return false;
+  if(!exp) exp=EXPIRATIONS[state.activeExp];
 
   if(data.price){
     var lp=parseFloat(data.price.toFixed(2));
@@ -906,17 +923,22 @@ function renderRealChain(stock,data,mode){
     var prem=bid>0&&ask>0?parseFloat(((bid+ask)/2).toFixed(2)):parseFloat((c.lastPrice||0).toFixed(2));
     if(prem<=0) prem=parseFloat((c.lastPrice||0).toFixed(2));
     var roc=strike>0&&prem>0?parseFloat(((prem/strike)*100).toFixed(2)):0;
-    // Greeks - use actual values or calculate if null
+    // Greeks - use actual values or calculate per-strike if null
     var rawDelta=c.delta;
     var rawTheta=c.theta;
     var rawIV=c.impliedVolatility;
-    var delta=rawDelta!=null?parseFloat(rawDelta.toFixed(2)):"-";
-    var theta=rawTheta!=null?parseFloat(rawTheta.toFixed(3)):"-";
-    var iv=rawIV!=null?parseFloat((rawIV*100).toFixed(1))+"%":"-";
-    var oi=c.openInterest||0;
-    var vol=c.volume||0;
+    var calcOtmPct=(stock.price-strike)/Math.max(stock.price,0.01);
+    var calcDeltaRaw=parseFloat((0.5*Math.exp(-calcOtmPct*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
+    calcDeltaRaw=Math.max(0.02,Math.min(0.65,calcDeltaRaw));
+    var calcDelta=mode==="csp"?-calcDeltaRaw:calcDeltaRaw;
+    var calcIVRaw=Math.max(8,Math.min(150,parseFloat(((prem/Math.max(stock.price,0.01))*Math.sqrt(365/exp.dte)*100).toFixed(1))));
+    var calcTheta=prem>0?parseFloat(((prem/exp.dte)*-1).toFixed(3)):0;
+    var delta=rawDelta!=null?parseFloat(rawDelta.toFixed(2)):calcDelta;
+    var theta=rawTheta!=null?parseFloat(rawTheta.toFixed(3)):calcTheta;
+    var ivNum=rawIV!=null?parseFloat((rawIV*100).toFixed(1)):calcIVRaw;
+    var iv=ivNum+"%";
+    var oi=c.openInterest!=null?c.openInterest:0;
     var oiStr=oi>0?(oi>=1000?parseFloat((oi/1000).toFixed(1))+"K":oi):"-";
-    var volStr=vol>0?(vol>=1000?parseFloat((vol/1000).toFixed(1))+"K":vol):"-";
     var isBest=i===bestIdx;
     var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
     var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
@@ -932,7 +954,9 @@ function renderRealChain(stock,data,mode){
       +'</div>';
     if(isBest){
       var exp=EXPIRATIONS[state.activeExp];
-      updateTradeIdea(stock, strike, prem, delta, theta, iv, exp?exp.label:"-", exp?exp.dte:30);
+      var deltaStr=typeof delta==="number"?delta.toFixed(2):String(delta);
+      var thetaStr=typeof theta==="number"?theta.toFixed(3):String(theta);
+      updateTradeIdea(stock, strike, prem, deltaStr, thetaStr, iv, exp?exp.label:"-", exp?exp.dte:30);
     }
   });
   document.getElementById("chain-rows").innerHTML=html;
@@ -942,9 +966,9 @@ function renderRealChain(stock,data,mode){
 function loadChainForExp(stock,exp){
   document.getElementById("chain-rows").innerHTML='<div style="color:#475569;font-size:12px;padding:16px;text-align:center">Loading live options...</div>';
   var baseKey=stock.ticker+"_0";
-  var expTs=null;
 
   function doFetch(){
+    var expTs=null;
     if(optionsCache[baseKey]&&optionsCache[baseKey].expirations&&optionsCache[baseKey].expirations.length){
       var now=Math.floor(Date.now()/1000);
       var targetTs=now+(exp.dte*86400);
@@ -955,12 +979,12 @@ function loadChainForExp(stock,exp){
         if(d<minDiff){minDiff=d;expTs=ts;}
       });
     }
-    // Clear this specific expiration cache to always get fresh data
+    // Only clear non-base specific expiration cache
     var cacheKey=stock.ticker+"_"+(expTs||"0");
-    delete optionsCache[cacheKey];
+    if(cacheKey!==baseKey) delete optionsCache[cacheKey];
 
     fetchRealChain(stock.ticker,expTs,function(data){
-      if(!renderRealChain(stock,data,state.chainMode)){
+      if(!renderRealChain(stock,data,state.chainMode,exp)){
         var vals=getVals(stock);
         var dteFactor=Math.sqrt(exp.dte/stock.dte);
         renderChainRows(stock,vals,dteFactor,exp.dte);
