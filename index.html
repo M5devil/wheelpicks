@@ -71,9 +71,9 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 .exp-tab{background:#0a1628;border:1px solid #1e3a5f;border-radius:20px;padding:4px 10px;color:#64748b;font-size:11px;cursor:pointer;font-weight:400}
 .exp-tab.active{background:#fff;border-color:#fff;color:#000;font-weight:700}
 .chain-table{background:#040810;border-radius:12px;overflow:hidden;border:1px solid #0d1f38}
-.chain-header{display:grid;grid-template-columns:repeat(6,1fr);padding:8px 14px;border-bottom:1px solid #0d1f38}
+.chain-header{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 14px;border-bottom:1px solid #0d1f38}
 .chain-header span{font-size:10px;color:#475569;text-transform:uppercase}
-.chain-row{display:grid;grid-template-columns:repeat(6,1fr);padding:10px 14px;border-bottom:1px solid #040810}
+.chain-row{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 14px;border-bottom:1px solid #040810}
 .chain-row.highlight{background:rgba(59,130,246,0.04)}
 .chain-row span{font-size:12px;font-family:monospace}
 .chain-note{font-size:10px;color:#1e3a5f;margin-top:6px}
@@ -184,7 +184,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
       <div class="exp-tabs" id="exp-tabs"></div>
       <div class="chain-table">
         <div class="chain-header">
-          <span>Strike</span><span>Premium</span><span>ROC</span><span>Delta</span><span>IV</span><span>OI</span>
+          <span>Strike</span><span>Premium</span><span>ROC</span><span>Delta</span><span>Theta</span><span>IV</span><span>OI</span>
         </div>
         <div id="chain-rows"></div>
       </div>
@@ -654,10 +654,6 @@ function renderDetail(){
   var gDelta=parseFloat((0.5*Math.exp(-otmPct*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
   gDelta=Math.max(0.02,Math.min(0.65,gDelta));
   if(stock.mode==="csp") gDelta=gDelta*-1;
-  var otmPct=(stock.price-gStrike)/Math.max(stock.price,0.01);
-  var gDelta=parseFloat((0.5*Math.exp(-otmPct*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
-  gDelta=Math.max(0.02,Math.min(0.65,gDelta));
-  if(stock.mode==="csp") gDelta=gDelta*-1;
   var gTheta=parseFloat(((gPrem/exp.dte)*-1).toFixed(3));
   var gIV=parseFloat(((gPrem/stock.price)*Math.sqrt(365/exp.dte)*100).toFixed(1));
   gIV=Math.max(8,Math.min(150,gIV));
@@ -752,15 +748,24 @@ function renderChainRows(stock,vals,dteFactor){
 
 function setExp(i){
   state.activeExp=i;
-  // Clear per-expiration cache so new tab fetches fresh data
+  // Update tab highlight immediately
+  document.querySelectorAll(".exp-tab").forEach(function(t,idx){
+    t.classList.toggle("active",idx===i);
+  });
+  // Show updating state right away so user knows something changed
+  var exp=EXPIRATIONS[i];
+  var dteLbl=document.getElementById("greeks-dte-label");
+  if(dteLbl) dteLbl.textContent="— "+exp.label+" · Updating...";
+  document.getElementById("greeks-rows").innerHTML=
+    '<div style="grid-column:span 2;text-align:center;padding:10px;color:#475569;font-size:12px">Updating for '+exp.label+'...</div>';
+  document.getElementById("trade-idea-grid").innerHTML=
+    '<div style="text-align:center;padding:20px;color:#475569;font-size:13px">Loading '+exp.label+' trade idea...</div>';
+  document.getElementById("chain-rows").innerHTML=
+    '<div style="color:#475569;font-size:12px;padding:16px;text-align:center">Loading '+exp.label+' options...</div>';
+  // Fetch fresh data for this expiration
   if(state.currentStock){
-    var ticker=state.currentStock.ticker;
-    // Keep base cache (expirations list) but clear specific exp caches
-    Object.keys(optionsCache).forEach(function(k){
-      if(k.startsWith(ticker+"_")&&k!==ticker+"_0") delete optionsCache[k];
-    });
+    loadChainForExp(state.currentStock,exp);
   }
-  renderDetail();
 }
 
 function setChainMode(mode){
@@ -863,8 +868,6 @@ function renderRealChain(stock,data,mode){
   var note=document.getElementById("chain-note");
   if(note) note.textContent=stock.ticker+" options at $"+stock.price+" · Live from Yahoo Finance";
 
-  var bestIdx=0,bestDiff=999;
-
   // Filter to reasonable strikes around current price (within 30%)
   var allContracts=contracts.filter(function(c){
     return c.strike>stock.price*0.7 && c.strike<stock.price*1.3;
@@ -876,20 +879,23 @@ function renderRealChain(stock,data,mode){
   // Take up to 10
   var displayContracts=allContracts.slice(0,10);
 
-  // Find best pick - closest delta to 0.30, use strike proximity if no delta
+  // Find best pick - closest delta to 0.30 first
+  var bestIdx=0,bestDiff=999,hasDelta=false;
   displayContracts.forEach(function(c,i){
     var d=Math.abs(c.delta||0);
     if(d>0){
+      hasDelta=true;
       var diff=Math.abs(d-0.30);
       if(diff<bestDiff){bestDiff=diff;bestIdx=i;}
     }
   });
-  // If no valid deltas found, pick strike closest to 5-8% OTM
-  if(bestDiff===999){
+  // If no valid deltas, pick strike closest to 5-8% OTM
+  if(!hasDelta){
+    var otmBestDiff=999;
     displayContracts.forEach(function(c,i){
       var otmPct=mode==="csp"?(stock.price-c.strike)/stock.price:(c.strike-stock.price)/stock.price;
       var diff=Math.abs(otmPct-0.06);
-      if(diff<bestDiff){bestDiff=diff;bestIdx=i;}
+      if(diff<otmBestDiff){otmBestDiff=diff;bestIdx=i;}
     });
   }
 
@@ -923,7 +929,6 @@ function renderRealChain(stock,data,mode){
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+iv+'</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
-      +'<span style="color:#334155">'+volStr+'</span>'
       +'</div>';
     if(isBest){
       var exp=EXPIRATIONS[state.activeExp];
@@ -1194,10 +1199,8 @@ document.getElementById("no-data-toggle").addEventListener("click",function(){
 });
 
 state.currentStock=null;
-state.currentStock=null;
 renderFilterPills();
 renderList();
-startAutoRefresh();
 startAutoRefresh();
 </script>
 </body>
