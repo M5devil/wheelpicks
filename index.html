@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v12-SUPABASE</title>
+<title>WheelPicks v13-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v12</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v13</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -970,13 +970,17 @@ function loadChainForExp(stock,exp){
   function doFetch(){
     var expTs=null;
     if(optionsCache[baseKey]&&optionsCache[baseKey].expirations&&optionsCache[baseKey].expirations.length){
+      var exps=optionsCache[baseKey].expirations.slice().sort(function(a,b){return a-b;});
       var now=Math.floor(Date.now()/1000);
-      var targetTs=now+(exp.dte*86400);
-      var exps=optionsCache[baseKey].expirations;
+      // Filter to only future expirations
+      var futureExps=exps.filter(function(ts){return ts>now;});
+      if(!futureExps.length) futureExps=exps;
+      // Find the expiration whose actual DTE is closest to our target DTE
       var minDiff=999999999;
-      exps.forEach(function(ts){
-        var d=Math.abs(ts-targetTs);
-        if(d<minDiff){minDiff=d;expTs=ts;}
+      futureExps.forEach(function(ts){
+        var actualDte=Math.round((ts-now)/86400);
+        var diff=Math.abs(actualDte-exp.dte);
+        if(diff<minDiff){minDiff=diff;expTs=ts;}
       });
     }
     // Only clear non-base specific expiration cache
