@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v14-SUPABASE</title>
+<title>WheelPicks v16-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v14</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v16</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -249,6 +249,22 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 </div>
 
 <script>
+// ---------- SUPABASE / FETCH ----------
+var SUPABASE_URL="https://qpcugczsqsjnodlgdver.supabase.co";
+var SUPABASE_KEY="sb_publishable__3Rr8ck68b4x95x5Grve5g_VjubKDTT";
+var PROXY=SUPABASE_URL+"/functions/v1/options-proxy";
+
+function supaFetch(p){
+  var qs=Object.keys(p).map(function(k){return k+"="+encodeURIComponent(p[k]);}).join("&");
+  return fetch(PROXY+"?"+qs,{
+    headers:{
+      "apikey":SUPABASE_KEY,
+      "Authorization":"Bearer "+SUPABASE_KEY,
+      "Content-Type":"application/json"
+    }
+  });
+}
+
 var STOCKS = [
   {ticker:"CLX",name:"Clorox",sector:"Consumer Staples",price:86.12,rsi:25.38,strike:80.00,premium:1.18,dte:44,roc:1.47,signal:"Oversold",mode:"csp",mcap:"$20.1B",desc:"Clorox manufactures consumer products across household cleaning and lifestyle segments including bleach, Hidden Valley, and Glad brands."},
   {ticker:"RBLX",name:"Roblox",sector:"Technology",price:44.04,rsi:29.21,strike:41.00,premium:2.19,dte:38,roc:5.34,signal:"Oversold",mode:"csp",mcap:"$27.8B",desc:"Roblox is an online platform and game creation system hosting millions of user-created experiences globally."},
@@ -387,7 +403,8 @@ var state = {
   noDataOpen: false,
   currentStock: null,
   chainMode: "csp",
-  activeExp: 3
+  activeExp: 3,
+  liveGreeksLoaded: false
 };
 
 function rsiColor(rsi){
@@ -552,6 +569,7 @@ function openDetail(ticker){
   state.currentStock=stock;
   state.chainMode=stock.mode;
   state.activeExp=3;
+  state.liveGreeksLoaded=false;
   renderDetail();
   document.getElementById("page-list").classList.remove("active");
   document.getElementById("page-detail").classList.add("active");
@@ -658,9 +676,8 @@ function renderDetail(){
   var gIV=parseFloat(((gPrem/stock.price)*Math.sqrt(365/exp.dte)*100).toFixed(1));
   gIV=Math.max(8,Math.min(150,gIV));
 
-  // Only show calculated Greeks if no live chain loaded yet
-  var hasLiveChain=optionsCache[stock.ticker+"_0"]!=null;
-  if(!hasLiveChain){
+  // Only show calculated Greeks if live chain hasn't been loaded yet for this exp
+  if(!state.liveGreeksLoaded){
     var dteLbl2=document.getElementById("greeks-dte-label");
     if(dteLbl2) dteLbl2.textContent="— "+exp.label+" · $"+gStrike+" (est.)";
     document.getElementById("greeks-rows").innerHTML=[
@@ -725,7 +742,15 @@ function renderDetail(){
 function renderChainRows(stock,vals,dteFactor,expDte){
   var exp=EXPIRATIONS[state.activeExp];
   var html="";
-  var bestIdx=3; // default to 4th strike (closest to stock price)
+  // Dynamically pick best strike: closest delta to 0.30, or closest to 6% OTM
+  var bestIdx=0,bestDiff=999;
+  vals.strikes.forEach(function(strike,i){
+    var otmP=(stock.price-strike)/Math.max(stock.price,0.01);
+    var dv=parseFloat((0.5*Math.exp(-otmP*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
+    dv=Math.max(0.02,Math.min(0.65,dv));
+    var diff=Math.abs(dv-0.30);
+    if(diff<bestDiff){bestDiff=diff;bestIdx=i;}
+  });
   vals.strikes.forEach(function(strike,i){
     var prem=Math.max(0.01,parseFloat((vals.basePremiums[i]*dteFactor).toFixed(2)));
     var roc=parseFloat(((prem/strike)*100).toFixed(2));
@@ -758,6 +783,7 @@ function renderChainRows(stock,vals,dteFactor,expDte){
 
 function setExp(i){
   state.activeExp=i;
+  state.liveGreeksLoaded=false;  // allow Greeks to update for new expiration
   // Update tab highlight immediately
   document.querySelectorAll(".exp-tab").forEach(function(t,idx){
     t.classList.toggle("active",idx===i);
@@ -952,6 +978,7 @@ function renderRealChain(stock,data,mode,exp){
       var deltaStr=typeof delta==="number"?delta.toFixed(2):String(delta);
       var thetaStr=typeof theta==="number"?theta.toFixed(3):String(theta);
       updateTradeIdea(stock, strike, prem, deltaStr, thetaStr, iv, exp?exp.label:"-", exp?exp.dte:30);
+      state.liveGreeksLoaded=true;  // mark live data displayed; prevent auto-refresh overwrite
     }
   });
   document.getElementById("chain-rows").innerHTML=html;
@@ -1010,21 +1037,7 @@ function loadChainForExp(stock,exp){
 
 // ---------- LIVE PRICES + SUPABASE ----------
 
-var SUPABASE_URL="https://qpcugczsqsjnodlgdver.supabase.co";
-var SUPABASE_KEY="sb_publishable__3Rr8ck68b4x95x5Grve5g_VjubKDTT";
-var PROXY=SUPABASE_URL+"/functions/v1/options-proxy";
 var liveData={},lastUpdated="",valsCache={};
-
-function supaFetch(p){
-  var qs=Object.keys(p).map(function(k){return k+"="+encodeURIComponent(p[k]);}).join("&");
-  return fetch(PROXY+"?"+qs,{
-    headers:{
-      "apikey":SUPABASE_KEY,
-      "Authorization":"Bearer "+SUPABASE_KEY,
-      "Content-Type":"application/json"
-    }
-  });
-}
 
 function fetchSinglePrice(ticker,cb){
   supaFetch({ticker:ticker,type:"quote"})
