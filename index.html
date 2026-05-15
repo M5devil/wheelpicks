@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v16-SUPABASE</title>
+<title>WheelPicks v17-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -71,9 +71,9 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 .exp-tab{background:#0a1628;border:1px solid #1e3a5f;border-radius:20px;padding:4px 10px;color:#64748b;font-size:11px;cursor:pointer;font-weight:400}
 .exp-tab.active{background:#fff;border-color:#fff;color:#000;font-weight:700}
 .chain-table{background:#040810;border-radius:12px;overflow:hidden;border:1px solid #0d1f38}
-.chain-header{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 14px;border-bottom:1px solid #0d1f38}
+.chain-header{display:grid;grid-template-columns:repeat(8,1fr);padding:8px 14px;border-bottom:1px solid #0d1f38}
 .chain-header span{font-size:10px;color:#475569;text-transform:uppercase}
-.chain-row{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 14px;border-bottom:1px solid #040810}
+.chain-row{display:grid;grid-template-columns:repeat(8,1fr);padding:10px 14px;border-bottom:1px solid #040810}
 .chain-row.highlight{background:rgba(59,130,246,0.04)}
 .chain-row span{font-size:12px;font-family:monospace}
 .chain-note{font-size:10px;color:#1e3a5f;margin-top:6px}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v16</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v17</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -184,11 +184,14 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
       <div class="exp-tabs" id="exp-tabs"></div>
       <div class="chain-table">
         <div class="chain-header">
-          <span>Strike</span><span>Premium</span><span>ROC</span><span>Delta</span><span>Theta</span><span>IV</span><span>OI</span>
+          <span>Strike</span><span>Premium</span><span>ROC</span><span>Delta</span><span>Theta</span><span>IV</span><span>OI</span><span>Vol</span>
         </div>
         <div id="chain-rows"></div>
       </div>
-      <div class="chain-note" id="chain-note"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <div class="chain-note" id="chain-note"></div>
+        <button id="chain-refresh-btn" onclick="forceRefreshChain()" style="background:none;border:1px solid #1e3a5f;border-radius:6px;padding:3px 9px;color:#475569;font-size:10px;cursor:pointer">↺ Refresh</button>
+      </div>
     </div>
 
     <!-- AI News -->
@@ -775,6 +778,7 @@ function renderChainRows(stock,vals,dteFactor,expDte){
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+ivNum+'%</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
+      +'<span style="color:#334155">-</span>'
       +'</div>';
     if(isBest) updateTradeIdea(stock,strike,prem,delta,theta,ivNum+"%",exp.label,exp.dte);
   });
@@ -806,6 +810,23 @@ function setChainMode(mode){
 
 // ---------- REAL OPTIONS CHAIN ----------
 var optionsCache={};
+
+function forceRefreshChain(){
+  var stock=state.currentStock;
+  if(!stock) return;
+  // Wipe all cached data for this ticker
+  Object.keys(optionsCache).forEach(function(k){
+    if(k.indexOf(stock.ticker+"_")===0) delete optionsCache[k];
+  });
+  state.liveGreeksLoaded=false;
+  var btn=document.getElementById("chain-refresh-btn");
+  if(btn){btn.textContent="↺ Fetching...";btn.disabled=true;}
+  var chainRows=document.getElementById("chain-rows");
+  if(chainRows) chainRows.style.opacity="0.3";
+  loadChainForExp(stock, EXPIRATIONS[state.activeExp]);
+  // Re-enable button after 4s
+  setTimeout(function(){if(btn){btn.textContent="↺ Refresh";btn.disabled=false;}},4000);
+}
 
 function fetchRealChain(ticker,expTs,callback){
   var cacheKey=ticker+"_"+(expTs||"0");
@@ -960,6 +981,8 @@ function renderRealChain(stock,data,mode,exp){
     var iv=ivNum+"%";
     var oi=c.openInterest!=null?c.openInterest:0;
     var oiStr=oi>0?(oi>=1000?parseFloat((oi/1000).toFixed(1))+"K":oi):"-";
+    var vol=c.volume!=null?c.volume:0;
+    var volStr=vol>0?(vol>=1000?parseFloat((vol/1000).toFixed(1))+"K":vol):"-";
     var isBest=i===bestIdx;
     var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
     var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
@@ -972,6 +995,7 @@ function renderRealChain(stock,data,mode,exp){
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+iv+'</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
+      +'<span style="color:#334155">'+volStr+'</span>'
       +'</div>';
     if(isBest){
       var exp=EXPIRATIONS[state.activeExp];
