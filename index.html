@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v18-SUPABASE</title>
+<title>WheelPicks v19-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v18</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v19</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -447,9 +447,9 @@ function getVals(stock){
   var sp=price<5?0.5:price<10?0.5:price<20?1:price<50?2.5:price<100?5:10;
   // Center on nearest strike to current price
   var center=Math.round(price/sp)*sp;
-  // Generate 10 unique strikes: 2 ITM + 8 OTM for CSPs
+  // Generate 10 unique strikes: 3 ITM above price + 7 OTM below for CSPs
   var rawStrikes=[];
-  for(var k=-1;k<=8;k++) rawStrikes.push(parseFloat((center+(1-k)*sp).toFixed(2)));
+  for(var k=-2;k<=7;k++) rawStrikes.push(parseFloat((center+(2-k)*sp).toFixed(2)));
   // Deduplicate and keep positive
   var seen={},strikes=[];
   rawStrikes.forEach(function(st){if(st>0&&!seen[st]){seen[st]=true;strikes.push(st);}});
@@ -933,9 +933,9 @@ function renderRealChain(stock,data,mode,exp){
   var note=document.getElementById("chain-note");
   if(note) note.textContent=stock.ticker+" options at $"+stock.price+" · Live from Yahoo Finance";
 
-  // Filter to reasonable strikes around current price (within 30%)
+  // Filter to reasonable strikes around current price — wider above (40%) to show ITM, tighter below (25%)
   var allContracts=contracts.filter(function(c){
-    return c.strike>stock.price*0.7 && c.strike<stock.price*1.3;
+    return c.strike>stock.price*0.75 && c.strike<stock.price*1.40;
   });
   // If too few, use all
   if(allContracts.length<3) allContracts=contracts;
