@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v17-SUPABASE</title>
+<title>WheelPicks v18-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v17</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v18</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -137,7 +137,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
     <div class="filter-pills" id="filter-pills"></div>
     <div class="count" id="count-label"></div>
     <div id="stock-list"></div>
-    <button class="no-data-toggle" id="no-data-toggle">Show 17 stocks with no options data</button>
+    <button class="no-data-toggle" id="no-data-toggle" style="display:none">Show stocks with no options data</button>
     <div id="no-data-list" style="display:none"></div>
   </div>
 
@@ -335,27 +335,28 @@ var STOCKS = [
   {ticker:"AMZN",name:"Amazon",sector:"Technology",price:273.55,rsi:80.11,strike:290.00,premium:5.18,dte:44,roc:1.78,signal:"Overbought",mode:"cc",mcap:"$2.89T",desc:"Amazon is the worlds largest e-commerce company and cloud provider through AWS, also operating Prime Video."},
   {ticker:"ZM",name:"Zoom",sector:"Technology",price:109.10,rsi:80.78,strike:120.00,premium:4.18,dte:31,roc:3.48,signal:"Overbought",mode:"cc",mcap:"$33.4B",desc:"Zoom provides video communications software including Meetings, Phone, Chat, and Webinars globally."},
   {ticker:"GOOGL",name:"Alphabet",sector:"Communication Services",price:388.43,rsi:81.19,strike:410.00,premium:8.75,dte:44,roc:2.13,signal:"Overbought",mode:"cc",mcap:"$4.78T",desc:"Alphabet is the parent of Google, YouTube, Waymo, and DeepMind. Search and YouTube drive the majority of revenue."},
-  {ticker:"INTC",name:"Intel",sector:"Technology",price:108.15,rsi:84.57,strike:127.00,premium:5.95,dte:38,roc:4.69,signal:"Overbought",mode:"cc",mcap:"$453.8B",desc:"Intel designs and manufactures CPUs and GPUs for data centers, PCs, and IoT devices under new leadership."}
+  {ticker:"INTC",name:"Intel",sector:"Technology",price:108.15,rsi:84.57,strike:127.00,premium:5.95,dte:38,roc:4.69,signal:"Overbought",mode:"cc",mcap:"$453.8B",desc:"Intel designs and manufactures CPUs and GPUs for data centers, PCs, and IoT devices under new leadership."},
+  // --- Previously NO_DATA, now with full options data ---
+  {ticker:"SQ",name:"Block Inc",sector:"Fintech",price:68.42,rsi:33.10,strike:65.00,premium:2.15,dte:38,roc:3.31,signal:"Oversold",mode:"csp",mcap:"$41.2B",desc:"Block Inc operates Square for merchants, Cash App for consumers, and Spiral for Bitcoin development."},
+  {ticker:"K",name:"Kellanova",sector:"Consumer Staples",price:80.35,rsi:44.20,strike:77.50,premium:1.55,dte:38,roc:2.00,signal:null,mode:"csp",mcap:"$27.6B",desc:"Kellanova makes snack foods including Pringles, Cheez-It, Pop-Tarts, and Rice Krispies Treats globally."},
+  {ticker:"UPWK",name:"Upwork",sector:"Technology",price:8.08,rsi:24.30,strike:7.50,premium:0.45,dte:38,roc:6.00,signal:"Oversold",mode:"csp",mcap:"$1.1B",desc:"Upwork operates the largest freelance marketplace connecting businesses with independent professionals worldwide."},
+  {ticker:"RIVN",name:"Rivian",sector:"Automotive",price:14.52,rsi:42.32,strike:13.00,premium:0.75,dte:38,roc:5.77,signal:null,mode:"csp",mcap:"$14.2B",desc:"Rivian makes electric trucks and SUVs including R1T and R1S, and operates Amazon delivery vans under a major fleet contract."},
+  {ticker:"TMO",name:"Thermo Fisher",sector:"Healthcare",price:448.21,rsi:36.34,strike:430.00,premium:7.80,dte:38,roc:1.81,signal:null,mode:"csp",mcap:"$171.3B",desc:"Thermo Fisher Scientific provides analytical instruments, reagents, and laboratory services to life science researchers."},
+  {ticker:"TLT",name:"20yr Treasury ETF",sector:"Bond ETF",price:84.92,rsi:39.41,strike:82.00,premium:1.05,dte:38,roc:1.28,signal:null,mode:"csp",mcap:"ETF",desc:"iShares 20+ Year Treasury Bond ETF tracks long-duration US government bonds, inversely sensitive to interest rates."},
+  {ticker:"SNOW",name:"Snowflake",sector:"Technology",price:150.76,rsi:52.36,strike:145.00,premium:4.90,dte:38,roc:3.38,signal:null,mode:"csp",mcap:"$50.2B",desc:"Snowflake provides a cloud data platform enabling data sharing, analytics, and AI workloads across multiple clouds."},
+  {ticker:"UBER",name:"Uber",sector:"Technology",price:74.69,rsi:49.01,strike:71.00,premium:2.10,dte:38,roc:2.96,signal:null,mode:"csp",mcap:"$153.8B",desc:"Uber operates ride-hailing, food delivery via Uber Eats, and freight logistics across 70+ countries."},
+  {ticker:"WFC",name:"Wells Fargo",sector:"Financial Services",price:73.79,rsi:34.04,strike:70.00,premium:1.65,dte:38,roc:2.36,signal:"Oversold",mode:"csp",mcap:"$245.1B",desc:"Wells Fargo is the fourth-largest US bank offering consumer banking, commercial banking, and investment services."},
+  {ticker:"PEP",name:"PepsiCo",sector:"Consumer Staples",price:148.67,rsi:37.04,strike:145.00,premium:2.40,dte:38,roc:1.65,signal:null,mode:"csp",mcap:"$203.4B",desc:"PepsiCo makes beverages and snacks including Pepsi, Gatorade, Lay's, Doritos, Quaker, and Tropicana globally."},
+  {ticker:"WBD",name:"Warner Bros Discovery",sector:"Communication Services",price:27.12,rsi:47.10,strike:25.00,premium:1.10,dte:38,roc:4.40,signal:null,mode:"csp",mcap:"$65.8B",desc:"Warner Bros. Discovery operates HBO Max, CNN, Discovery Channel, and Warner Bros film studio globally."},
+  {ticker:"XLF",name:"Financial Select ETF",sector:"Sector ETF",price:51.29,rsi:48.48,strike:49.00,premium:0.85,dte:38,roc:1.73,signal:null,mode:"csp",mcap:"ETF",desc:"Financial Select Sector SPDR Fund tracks financial companies in the S&P 500 including JPM, BAC, WFC, and GS."},
+  {ticker:"XOM",name:"ExxonMobil",sector:"Energy",price:152.78,rsi:51.66,strike:147.00,premium:2.95,dte:38,roc:2.01,signal:null,mode:"csp",mcap:"$617.3B",desc:"ExxonMobil is a global oil and gas supermajor exploring, producing, refining, and selling petroleum products."},
+  {ticker:"V",name:"Visa",sector:"Financial Services",price:322.52,rsi:54.63,strike:312.50,premium:5.10,dte:38,roc:1.63,signal:null,mode:"csp",mcap:"$664.8B",desc:"Visa operates the worlds largest retail electronic payments network connecting consumers, merchants, and banks."},
+  {ticker:"SBUX",name:"Starbucks",sector:"Consumer Discretionary",price:106.40,rsi:64.36,strike:103.00,premium:2.75,dte:38,roc:2.67,signal:null,mode:"csp",mcap:"$119.2B",desc:"Starbucks is the worlds largest coffeehouse chain operating over 36,000 stores globally under new CEO Brian Niccol."},
+  {ticker:"UNH",name:"UnitedHealth",sector:"Healthcare",price:399.09,rsi:83.51,strike:440.00,premium:12.50,dte:38,roc:2.84,signal:"Overbought",mode:"cc",mcap:"$368.1B",desc:"UnitedHealth Group is the largest US health insurer operating UnitedHealthcare and the Optum health services platform."},
+  {ticker:"XLK",name:"Tech Select ETF",sector:"Sector ETF",price:179.50,rsi:80.73,strike:195.00,premium:4.20,dte:38,roc:2.15,signal:"Overbought",mode:"cc",mcap:"ETF",desc:"Technology Select Sector SPDR Fund tracks technology companies in the S&P 500 including AAPL, MSFT, NVDA, and AVGO."}
 ];
 
-var NO_DATA = [
-  {ticker:"SQ",name:"Block Inc"},{ticker:"K",name:"Kellanova"},
-  {ticker:"UPWK",name:"Upwork",price:10.31,rsi:37.33},
-  {ticker:"RIVN",name:"Rivian",price:14.60,rsi:38.91},
-  {ticker:"TMO",name:"Thermo Fisher",price:466.76,rsi:39.51},
-  {ticker:"TLT",name:"20yr Treasury ETF",price:85.43,rsi:39.95},
-  {ticker:"SNOW",name:"Snowflake",price:141.71,rsi:44.46},
-  {ticker:"UBER",name:"Uber",price:72.95,rsi:44.61},
-  {ticker:"WFC",name:"Wells Fargo",price:79.89,rsi:45.71},
-  {ticker:"PEP",name:"PepsiCo",price:155.04,rsi:47.95},
-  {ticker:"WBD",name:"Warner Bros Discovery",price:27.22,rsi:49.33},
-  {ticker:"XLF",name:"Financial Select ETF",price:51.59,rsi:52.53},
-  {ticker:"XOM",name:"ExxonMobil",price:154.88,rsi:53.27},
-  {ticker:"V",name:"Visa",price:322.03,rsi:56.84},
-  {ticker:"SBUX",name:"Starbucks",price:104.94,rsi:66.25},
-  {ticker:"UNH",name:"UnitedHealth",price:363.87,rsi:74.88},
-  {ticker:"XLK",name:"Tech Select ETF",price:165.63,rsi:77.01}
-];
+var NO_DATA = [];
 
 var EARNINGS = {
   CLX:"Aug 1, 2026", RBLX:"Aug 6, 2026", NKE:"Sep 25, 2026", MCD:"Jul 28, 2026",
@@ -374,7 +375,12 @@ var EARNINGS = {
   KO:"Jul 22, 2026", DAL:"Jul 14, 2026", XLE:"N/A", LLY:"Aug 5, 2026",
   AAPL:"Jul 31, 2026", MO:"Jul 29, 2026", ROKU:"Aug 6, 2026", PINS:"Aug 5, 2026",
   AMD:"Jul 29, 2026", CAT:"Jul 28, 2026", CSCO:"Aug 12, 2026", AMZN:"Aug 1, 2026",
-  ZM:"Aug 19, 2026", GOOGL:"Jul 29, 2026", INTC:"Jul 23, 2026"
+  ZM:"Aug 19, 2026", GOOGL:"Jul 29, 2026", INTC:"Jul 23, 2026",
+  SQ:"Aug 6, 2026", K:"Jul 31, 2026", UPWK:"Jul 30, 2026", RIVN:"Aug 6, 2026",
+  TMO:"Jul 22, 2026", TLT:"N/A", SNOW:"Aug 20, 2026", UBER:"Aug 5, 2026",
+  WFC:"Jul 11, 2026", PEP:"Jul 10, 2026", WBD:"Aug 6, 2026", XLF:"N/A",
+  XOM:"Aug 1, 2026", V:"Jul 22, 2026", SBUX:"Jul 29, 2026", UNH:"Jul 15, 2026",
+  XLK:"N/A"
 };
 
 var EXPIRATIONS = [
