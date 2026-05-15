@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v21-SUPABASE</title>
+<title>WheelPicks v22-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v21</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v22</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -957,7 +957,8 @@ function renderRealChain(stock,data,mode,exp){
   }
   var note=document.getElementById("chain-note");
   var src=data.cacheSource||"";
-  var srcLabel=src==="HIT"?"Data from Supabase cache":src==="STALE"?"Data from Supabase cache (updating...)":"Live from Yahoo Finance";
+  // If we have real contracts, it came from Supabase cache (either fresh HIT, STALE, or MISS stored for next time)
+  var srcLabel=src==="STALE"?"Data from Supabase cache (updating...)":"Data from Supabase cache";
   if(note) note.textContent=stock.ticker+" options at $"+stock.price+" · "+srcLabel;
 
   // Filter to reasonable strikes around current price — wider above (40%) to show ITM, tighter below (25%)
