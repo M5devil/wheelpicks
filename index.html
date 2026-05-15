@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v22-SUPABASE</title>
+<title>WheelPicks v23-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v22</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v23</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -413,7 +413,8 @@ var state = {
   currentStock: null,
   chainMode: "csp",
   activeExp: 3,
-  liveGreeksLoaded: false
+  liveGreeksLoaded: false,
+  liveChainLoaded: false
 };
 
 function rsiColor(rsi){
@@ -600,6 +601,7 @@ function openDetail(ticker){
   state.chainMode=stock.mode;
   state.activeExp=3;
   state.liveGreeksLoaded=false;
+  state.liveChainLoaded=false;
   renderDetail();
   document.getElementById("page-list").classList.remove("active");
   document.getElementById("page-detail").classList.add("active");
@@ -634,6 +636,12 @@ function renderDetail(){
   document.getElementById("ai-news-area").innerHTML='<button class="ai-btn" onclick="fetchAI(\'news\')">⚡ Generate AI News Summary</button>';
   document.getElementById("ai-sellers-area").innerHTML='<button class="ai-sellers-btn" onclick="fetchAI(\'sellers\')">Generate Options Seller Analysis</button>';
   document.getElementById("yahoo-link").href="https://finance.yahoo.com/quote/"+stock.ticker;
+
+  // If live chain already loaded, just update price - don't reload chain or reset placeholders
+  if(state.liveChainLoaded){
+    return;
+  }
+
   document.getElementById("chain-note").textContent=stock.ticker+" options at $"+stock.price+" · Supabase cache";
 
   // Trade Idea - show placeholder, will be filled by live chain data
@@ -655,8 +663,7 @@ function renderDetail(){
   });
   document.getElementById("exp-tabs").innerHTML=tabHtml;
 
-  // Chain rows
-  // Load real options chain (falls back to calculated if unavailable)
+  // Chain rows - load real options chain
   loadChainForExp(stock, exp);
 
   // Steps
@@ -796,9 +803,8 @@ function renderChainRows(stock,vals,dteFactor,expDte){
     var isBest=i===bestIdx;
     var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
     var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
-    var star=isBest?' <span style="color:#fbbf24">★</span>':"";
     html+='<div class="chain-row" style="background:'+rowBg+';border-left:'+(isBest?"3px solid #f59e0b":"3px solid transparent")+'">'
-      +'<span style="color:'+(isBest?"#fbbf24":isATM?"#f1f5f9":"#e2e8f0")+';font-weight:'+(isBest||isATM?"800":"700")+'">$'+strike+star+'</span>'
+      +'<span style="color:'+(isBest?"#fbbf24":isATM?"#f1f5f9":"#e2e8f0")+';font-weight:'+(isBest||isATM?"800":"700")+'">$'+strike+'</span>'
       +'<span style="color:#22c55e;font-weight:700">$'+prem+'</span>'
       +'<span style="color:'+(roc>3?"#22c55e":"#86efac")+';font-weight:700">'+roc+'%</span>'
       +'<span style="color:#94a3b8">'+delta+'</span>'
@@ -814,7 +820,8 @@ function renderChainRows(stock,vals,dteFactor,expDte){
 
 function setExp(i){
   state.activeExp=i;
-  state.liveGreeksLoaded=false;  // allow Greeks to update for new expiration
+  state.liveGreeksLoaded=false;
+  state.liveChainLoaded=false;
   // Update tab highlight immediately
   document.querySelectorAll(".exp-tab").forEach(function(t,idx){
     t.classList.toggle("active",idx===i);
@@ -846,7 +853,7 @@ function forceRefreshChain(){
     if(k.indexOf(stock.ticker+"_")===0) delete optionsCache[k];
   });
   state.liveGreeksLoaded=false;
-  var btn=document.getElementById("chain-refresh-btn");
+  state.liveChainLoaded=false;
   if(btn){btn.textContent="↺ Fetching...";btn.disabled=true;}
   var chainRows=document.getElementById("chain-rows");
   if(chainRows) chainRows.style.opacity="0.3";
@@ -907,7 +914,7 @@ function updateTradeIdea(stock, strike, prem, delta, theta, iv, expLabel, expDte
   // Update Trade Idea box
   var tradeItems=[
     {l:"Strategy",v:strat,c:"#e2e8f0"},
-    {l:"Strike Price",v:"$"+strike+" ★",c:"#fbbf24"},
+    {l:"Strike Price",v:"$"+strike,c:"#fbbf24"},
     {l:"Expiration",v:expLabel,c:"#e2e8f0"},
     {l:"Premium",v:"$"+prem.toFixed(2)+"/share",c:"#22c55e"},
     {l:"Collateral",v:"$"+collateral,c:"#e2e8f0"},
@@ -1020,9 +1027,8 @@ function renderRealChain(stock,data,mode,exp){
     var isBest=i===bestIdx;
     var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
     var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
-    var star=isBest?' <span style="color:#fbbf24">★</span>':"";
     html+='<div class="chain-row" style="background:'+rowBg+';border-left:'+(isBest?"3px solid #f59e0b":"3px solid transparent")+'">'
-      +'<span style="color:'+(isBest?"#fbbf24":isATM?"#f1f5f9":"#e2e8f0")+';font-weight:'+(isBest||isATM?"800":"700")+'">$'+strike+star+'</span>'
+      +'<span style="color:'+(isBest?"#fbbf24":isATM?"#f1f5f9":"#e2e8f0")+';font-weight:'+(isBest||isATM?"800":"700")+'">$'+strike+'</span>'
       +'<span style="color:#22c55e;font-weight:700">$'+prem.toFixed(2)+'</span>'
       +'<span style="color:'+(roc>3?"#22c55e":"#86efac")+';font-weight:700">'+roc+'%</span>'
       +'<span style="color:#94a3b8">'+delta+'</span>'
@@ -1040,6 +1046,7 @@ function renderRealChain(stock,data,mode,exp){
     }
   });
   document.getElementById("chain-rows").innerHTML=html;
+  state.liveChainLoaded=true;
   return true;
 }
 
