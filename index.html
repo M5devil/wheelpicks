@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v19-SUPABASE</title>
+<title>WheelPicks v21-SUPABASE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v19</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v21</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -454,7 +454,28 @@ function getVals(stock){
   var seen={},strikes=[];
   rawStrikes.forEach(function(st){if(st>0&&!seen[st]){seen[st]=true;strikes.push(st);}});
   strikes=strikes.slice(0,10);
-  var basePremiums=strikes.map(function(st,i){return Math.max(0.01,parseFloat((stock.premium*(1-i*0.28+seededRand(s+i,-0.05,0.05))).toFixed(2)));});
+  // Realistic premium model: intrinsic value + time value component
+  // Uses stock's stored premium as the time value anchor at the stored strike
+  // Then scales time value by sqrt(DTE ratio) and adds intrinsic for ITM strikes
+  var anchorStrike=stock.strike||center;
+  var anchorPrem=stock.premium||0.50;
+  var anchorDte=stock.dte||38;
+  // Estimate IV from the anchor premium using simplified BSM
+  var ivEst=Math.max(0.15,Math.min(2.0,(anchorPrem/Math.max(stock.price,0.01))*Math.sqrt(365/anchorDte)*Math.sqrt(2*Math.PI)));
+  var basePremiums=strikes.map(function(st,i){
+    // Intrinsic value for CSP: max(0, strike - price)
+    var intrinsic=Math.max(0,parseFloat((st-price).toFixed(2)));
+    // Time value: price * IV * sqrt(DTE/365) * N(d2) approximation
+    // Simplified: use Gaussian CDF approximation based on moneyness
+    var moneyness=(st-price)/Math.max(price*ivEst*Math.sqrt(anchorDte/365),0.001);
+    // Approx N(moneyness) using logistic
+    var nd=1/(1+Math.exp(-0.7978*moneyness));
+    var timeVal=Math.max(0.01,parseFloat((price*ivEst*Math.sqrt(anchorDte/365)*nd*0.4).toFixed(2)));
+    // Add small seeded noise
+    var noise=seededRand(s+i,-0.03,0.03);
+    var prem=Math.max(0.01,parseFloat((intrinsic+timeVal+noise).toFixed(2)));
+    return prem;
+  });
   return {
     s:s,
     ma50:seededRand(s+1,stock.price*1.02,stock.price*1.10),
@@ -836,16 +857,19 @@ function forceRefreshChain(){
 
 function fetchRealChain(ticker,expTs,callback){
   var cacheKey=ticker+"_"+(expTs||"0");
-  if(optionsCache[cacheKey]){callback(optionsCache[cacheKey]);return;}
+  if(optionsCache[cacheKey]){callback(optionsCache[cacheKey],"memory");return;}
 
   var params={ticker:ticker,type:"options"};
   if(expTs) params.exp=expTs;
 
   supaFetch(params)
-  .then(function(r){return r.json();})
-  .then(function(d){
+  .then(function(r){
+    var cacheHeader=r.headers.get("X-Cache")||"";
+    return r.json().then(function(d){return {d:d,ch:cacheHeader};});
+  })
+  .then(function(res){
+    var d=res.d, cacheSource=res.ch;
     try{
-      // Yahoo returns optionChain.result[] wrapper
       var chain=d.optionChain||d;
       var results=chain.result||[];
       if(!results.length) throw new Error("no results");
@@ -855,20 +879,21 @@ function fetchRealChain(ticker,expTs,callback){
         puts:opts.puts||[],
         calls:opts.calls||[],
         expirations:result.expirationDates||[],
-        price:(result.quote&&result.quote.regularMarketPrice)||0
+        price:(result.quote&&result.quote.regularMarketPrice)||0,
+        cacheSource:cacheSource
       };
       if(!data.puts.length&&!data.calls.length) throw new Error("empty chain");
       optionsCache[cacheKey]=data;
       if(!optionsCache[ticker+"_0"]) optionsCache[ticker+"_0"]=data;
-      callback(data);
+      callback(data, cacheSource);
     }catch(e){
       console.log("Options parse error:",e.message, JSON.stringify(d).substring(0,300));
-      callback(null);
+      callback(null,"");
     }
   })
   .catch(function(e){
     console.log("Options fetch error:",e.message);
-    callback(null);
+    callback(null,"");
   });
 }
 
@@ -931,7 +956,9 @@ function renderRealChain(stock,data,mode,exp){
     }
   }
   var note=document.getElementById("chain-note");
-  if(note) note.textContent=stock.ticker+" options at $"+stock.price+" · Live from Yahoo Finance";
+  var src=data.cacheSource||"";
+  var srcLabel=src==="HIT"?"Data from Supabase cache":src==="STALE"?"Data from Supabase cache (updating...)":"Live from Yahoo Finance";
+  if(note) note.textContent=stock.ticker+" options at $"+stock.price+" · "+srcLabel;
 
   // Filter to reasonable strikes around current price — wider above (40%) to show ITM, tighter below (25%)
   var allContracts=contracts.filter(function(c){
@@ -1043,7 +1070,8 @@ function loadChainForExp(stock,exp){
     var cacheKey=stock.ticker+"_"+(expTs||"0");
     if(cacheKey!==baseKey) delete optionsCache[cacheKey];
 
-    fetchRealChain(stock.ticker,expTs,function(data){
+    fetchRealChain(stock.ticker,expTs,function(data,cacheSource){
+      if(data) data.cacheSource=data.cacheSource||cacheSource||"";
       if(!renderRealChain(stock,data,state.chainMode,exp)){
         var vals=getVals(stock);
         var dteFactor=Math.sqrt(exp.dte/stock.dte);
@@ -1056,8 +1084,8 @@ function loadChainForExp(stock,exp){
   }
 
   if(!optionsCache[baseKey]){
-    fetchRealChain(stock.ticker,null,function(data){
-      if(data) optionsCache[baseKey]=data;
+    fetchRealChain(stock.ticker,null,function(data,cacheSource){
+      if(data){data.cacheSource=data.cacheSource||cacheSource||"";optionsCache[baseKey]=data;}
       doFetch();
     });
   } else {
