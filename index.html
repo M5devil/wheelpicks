@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v26-VERCEL</title>
+<title>WheelPicks v27-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v26</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v27</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -861,6 +861,14 @@ function setExp(i){
 
 function setChainMode(mode){
   state.chainMode=mode;
+  // Don't reset liveChainLoaded — just re-render with same data in new mode
+  if(state.liveChainLoaded && state.currentStock){
+    var cacheKey=state.currentStock.ticker+"_"+(state.lastExpTs||"0");
+    if(optionsCache[cacheKey]){
+      renderRealChain(state.currentStock, optionsCache[cacheKey], mode, EXPIRATIONS[state.activeExp]);
+      return;
+    }
+  }
   renderDetail();
 }
 
@@ -870,17 +878,16 @@ var optionsCache={};
 function forceRefreshChain(){
   var stock=state.currentStock;
   if(!stock) return;
-  // Wipe all cached data for this ticker
   Object.keys(optionsCache).forEach(function(k){
     if(k.indexOf(stock.ticker+"_")===0) delete optionsCache[k];
   });
   state.liveGreeksLoaded=false;
   state.liveChainLoaded=false;
+  var btn=document.getElementById("chain-refresh-btn");
   if(btn){btn.textContent="↺ Fetching...";btn.disabled=true;}
   var chainRows=document.getElementById("chain-rows");
   if(chainRows) chainRows.style.opacity="0.3";
   loadChainForExp(stock, EXPIRATIONS[state.activeExp]);
-  // Re-enable button after 4s
   setTimeout(function(){if(btn){btn.textContent="↺ Refresh";btn.disabled=false;}},4000);
 }
 
@@ -1069,6 +1076,7 @@ function renderRealChain(stock,data,mode,exp){
   });
   document.getElementById("chain-rows").innerHTML=html;
   state.liveChainLoaded=true;
+  if(exp) state.lastExpTs=exp.ts||0;
   return true;
 }
 
@@ -1186,7 +1194,15 @@ function fetchAllPrices(){
           renderList();
           if(state.currentStock){
             for(var j=0;j<STOCKS.length;j++){if(STOCKS[j].ticker===state.currentStock.ticker){state.currentStock=STOCKS[j];break;}}
-            var sp=window.scrollY;renderDetail();window.scrollTo(0,sp);
+            if(state.liveChainLoaded){
+              // Just update price display — don't re-render chain
+              var dp=document.getElementById("d-price");
+              if(dp) dp.textContent="$"+state.currentStock.price;
+              var detailLU=document.getElementById("detail-last-updated");
+              if(detailLU&&lastUpdated) detailLU.textContent="Last updated: "+lastUpdated;
+            } else {
+              var sp=window.scrollY;renderDetail();window.scrollTo(0,sp);
+            }
           }
         }
       });
