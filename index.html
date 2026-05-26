@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v31-VERCEL</title>
+<title>WheelPicks v32-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v31</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v32</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -309,6 +309,7 @@ function calcIV(price,S,K,T,isCall){
 }
 
 
+var STOCKS = [
   {ticker:"CLX",name:"Clorox",sector:"Consumer Staples",price:86.12,rsi:25.38,strike:80.00,premium:1.18,dte:44,roc:1.47,signal:"Oversold",mode:"csp",mcap:"$20.1B",desc:"Clorox manufactures consumer products across household cleaning and lifestyle segments including bleach, Hidden Valley, and Glad brands."},
   {ticker:"RBLX",name:"Roblox",sector:"Technology",price:44.04,rsi:29.21,strike:41.00,premium:2.19,dte:38,roc:5.34,signal:"Oversold",mode:"csp",mcap:"$27.8B",desc:"Roblox is an online platform and game creation system hosting millions of user-created experiences globally."},
   {ticker:"NKE",name:"Nike",sector:"Consumer Discretionary",price:43.06,rsi:30.44,strike:41.00,premium:1.17,dte:38,roc:2.84,signal:null,mode:"csp",mcap:"$65.2B",desc:"Nike designs, markets and sells athletic footwear, apparel, equipment and accessories globally."},
