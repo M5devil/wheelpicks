@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v33-VERCEL</title>
+<title>WheelPicks v34-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v33</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v34</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -838,18 +838,25 @@ function renderChainRows(stock,vals,dteFactor,expDte){
   // Dynamically pick best strike: closest delta to 0.30, or closest to 6% OTM
   var bestIdx=0,bestDiff=999;
   vals.strikes.forEach(function(strike,i){
-    var otmP=(stock.price-strike)/Math.max(stock.price,0.01);
-    var dv=parseFloat((0.5*Math.exp(-otmP*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
-    dv=Math.max(0.02,Math.min(0.65,dv));
-    var diff=Math.abs(dv-0.30);
+    var dv2=0;
+    if(exp.dte>0&&stock.price>0&&strike>0){
+      var T_b=exp.dte/365,sigma_b=0.80,r_b=0.05;
+      var d1_b=(Math.log(stock.price/strike)+(r_b+0.5*sigma_b*sigma_b)*T_b)/(sigma_b*Math.sqrt(T_b));
+      dv2=Math.abs(normalCDF(d1_b)-1);
+    }
+    var diff=Math.abs(dv2-0.30);
     if(diff<bestDiff){bestDiff=diff;bestIdx=i;}
   });
   vals.strikes.forEach(function(strike,i){
     var prem=Math.max(0.01,parseFloat((vals.basePremiums[i]*dteFactor).toFixed(2)));
     var roc=parseFloat(((prem/strike)*100).toFixed(2));
-    var otmP=(stock.price-strike)/Math.max(stock.price,0.01);
-    var dv=parseFloat((0.5*Math.exp(-otmP*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
-    dv=Math.max(0.02,Math.min(0.65,dv));
+    var dv=0;
+    if(exp.dte>0&&stock.price>0&&strike>0){
+      var sigma_c=0.80,r_c=0.05,T_c=exp.dte/365;
+      var d1_c=(Math.log(stock.price/strike)+(r_c+0.5*sigma_c*sigma_c)*T_c)/(sigma_c*Math.sqrt(T_c));
+      dv=state.chainMode==="csp"?(normalCDF(d1_c)-1):normalCDF(d1_c);
+      dv=parseFloat(Math.abs(dv).toFixed(2));
+    }
     var delta=state.chainMode==="csp"?(-dv).toFixed(2):("+"+dv.toFixed(2));
     var ivNum=Math.max(8,Math.min(150,parseFloat(((prem/Math.max(stock.price,0.01))*Math.sqrt(365/exp.dte)*100).toFixed(1))));
     var theta=parseFloat(((prem/exp.dte)*-1).toFixed(3));
@@ -866,8 +873,8 @@ function renderChainRows(stock,vals,dteFactor,expDte){
       +'<span style="color:#94a3b8">'+delta+'</span>'
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+ivNum+'%</span>'
-      +'<span style="color:#475569">'+oiStr+'</span>'
-      +'<span style="color:#475569">-</span>'
+      +'<span style="color:#64748b">'+oiStr+'</span>'
+      +'<span style="color:#64748b">-</span>'
       +'</div>';
     if(isBest) updateTradeIdea(stock,strike,prem,delta,theta,ivNum+"%",exp.label,exp.dte);
   });
@@ -1088,10 +1095,17 @@ function renderRealChain(stock,data,mode,exp){
     var rawDelta=c.delta;
     var rawTheta=c.theta;
     var rawIV=c.impliedVolatility;
-    var calcOtmPct=(stock.price-strike)/Math.max(stock.price,0.01);
-    var calcDeltaRaw=parseFloat((0.5*Math.exp(-calcOtmPct*8)*(0.4+0.6*(exp.dte/60))).toFixed(2));
-    calcDeltaRaw=Math.max(0.02,Math.min(0.65,calcDeltaRaw));
-    var calcDelta=mode==="csp"?-calcDeltaRaw:calcDeltaRaw;
+    // Calculate delta using Black-Scholes for accuracy
+    var T2=exp.dte/365;
+    var calcDeltaBS=0;
+    if(T2>0&&stock.price>0&&strike>0){
+      var sigma2=0.80; // typical IV estimate for calc fallback
+      var r2=0.05;
+      var d12=(Math.log(stock.price/strike)+(r2+0.5*sigma2*sigma2)*T2)/(sigma2*Math.sqrt(T2));
+      calcDeltaBS=mode==="csp"?(normalCDF(d12)-1):normalCDF(d12);
+      calcDeltaBS=parseFloat(calcDeltaBS.toFixed(2));
+    }
+    var calcDelta=calcDeltaBS||0;
     var calcIVRaw=Math.max(8,Math.min(150,parseFloat(((prem/Math.max(stock.price,0.01))*Math.sqrt(365/exp.dte)*100).toFixed(1))));
     var calcTheta=prem>0?parseFloat(((prem/exp.dte)*-1).toFixed(3)):0;
     var delta=rawDelta!=null?parseFloat(rawDelta.toFixed(2)):calcDelta;
@@ -1117,8 +1131,8 @@ function renderRealChain(stock,data,mode,exp){
       +'<span style="color:#94a3b8">'+delta+'</span>'
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+iv+'</span>'
-      +'<span style="color:#475569">'+oiStr+'</span>'
-      +'<span style="color:#475569">'+volStr+'</span>'
+      +'<span style="color:#64748b">'+oiStr+'</span>'
+      +'<span style="color:#64748b">'+volStr+'</span>'
       +'</div>';
     if(isBest){
       var exp=EXPIRATIONS[state.activeExp];
@@ -1143,25 +1157,22 @@ function loadChainForExp(stock,exp){
   }
 
   function doFetch(){
-    var expTs=null;
+    // Always use the specific expiration timestamp — never fall back to base cache for display
+    var expTs=exp.ts||null;
+
+    // If we have base cache with real Yahoo expirations, find the closest real one
     if(optionsCache[baseKey]&&optionsCache[baseKey].expirations&&optionsCache[baseKey].expirations.length){
       var exps=optionsCache[baseKey].expirations.slice().sort(function(a,b){return a-b;});
       var now=Math.floor(Date.now()/1000);
       var futureExps=exps.filter(function(ts){return ts>now;});
       if(!futureExps.length) futureExps=exps;
-      // Find the expiration closest to our target DTE
       var minDiff=999999999;
       futureExps.forEach(function(ts){
         var actualDte=Math.round((ts-now)/86400);
         var diff=Math.abs(actualDte-exp.dte);
         if(diff<minDiff){minDiff=diff;expTs=ts;}
       });
-    } else {
-      // No base cache yet — use the pre-calculated timestamp from EXPIRATIONS
-      expTs=exp.ts||null;
     }
-    // Only clear non-base specific expiration cache
-    var cacheKey=stock.ticker+"_"+(expTs||"0");
 
     fetchRealChain(stock.ticker,expTs,function(data,cacheSource){
       if(data) data.cacheSource=data.cacheSource||cacheSource||"";
@@ -1176,6 +1187,7 @@ function loadChainForExp(stock,exp){
     });
   }
 
+  // Fetch base chain first to get real expiration timestamps, then fetch specific exp
   if(!optionsCache[baseKey]){
     fetchRealChain(stock.ticker,null,function(data,cacheSource){
       if(data){data.cacheSource=data.cacheSource||cacheSource||"";optionsCache[baseKey]=data;}
