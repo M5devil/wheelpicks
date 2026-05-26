@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v28-VERCEL</title>
+<title>WheelPicks v31-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v28</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v31</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -275,7 +275,40 @@ function supaFetch(p){
   });
 }
 
-var STOCKS = [
+// ---------- BLACK-SCHOLES IV SOLVER ----------
+function normalCDF(x){
+  var t=1/(1+0.2316419*Math.abs(x));
+  var d=0.3989423*Math.exp(-x*x/2);
+  var p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.8212560+t*1.3302744))));
+  return x>=0?1-p:p;
+}
+function bsPrice(S,K,T,r,sigma,isCall){
+  if(T<=0||sigma<=0) return Math.max(0,isCall?S-K:K-S);
+  var d1=(Math.log(S/K)+(r+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+  var d2=d1-sigma*Math.sqrt(T);
+  return isCall?S*normalCDF(d1)-K*Math.exp(-r*T)*normalCDF(d2):K*Math.exp(-r*T)*normalCDF(-d2)-S*normalCDF(-d1);
+}
+function bsVega(S,K,T,r,sigma){
+  if(T<=0||sigma<=0) return 0;
+  var d1=(Math.log(S/K)+(r+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+  return S*Math.sqrt(T)*0.3989423*Math.exp(-d1*d1/2);
+}
+function calcIV(price,S,K,T,isCall){
+  if(price<=0||T<=0||S<=0||K<=0) return 0;
+  var r=0.05,sigma=0.5;
+  for(var i=0;i<100;i++){
+    var p=bsPrice(S,K,T,r,sigma,isCall);
+    var v=bsVega(S,K,T,r,sigma);
+    if(Math.abs(v)<1e-10) break;
+    sigma=sigma-(p-price)/v;
+    if(sigma<0.001) sigma=0.001;
+    if(sigma>20) sigma=20;
+    if(Math.abs(p-price)<0.0001) break;
+  }
+  return parseFloat((sigma*100).toFixed(1));
+}
+
+
   {ticker:"CLX",name:"Clorox",sector:"Consumer Staples",price:86.12,rsi:25.38,strike:80.00,premium:1.18,dte:44,roc:1.47,signal:"Oversold",mode:"csp",mcap:"$20.1B",desc:"Clorox manufactures consumer products across household cleaning and lifestyle segments including bleach, Hidden Valley, and Glad brands."},
   {ticker:"RBLX",name:"Roblox",sector:"Technology",price:44.04,rsi:29.21,strike:41.00,premium:2.19,dte:38,roc:5.34,signal:"Oversold",mode:"csp",mcap:"$27.8B",desc:"Roblox is an online platform and game creation system hosting millions of user-created experiences globally."},
   {ticker:"NKE",name:"Nike",sector:"Consumer Discretionary",price:43.06,rsi:30.44,strike:41.00,premium:1.17,dte:38,roc:2.84,signal:null,mode:"csp",mcap:"$65.2B",desc:"Nike designs, markets and sells athletic footwear, apparel, equipment and accessories globally."},
@@ -1044,9 +1077,18 @@ function renderRealChain(stock,data,mode,exp){
   var html="";
   displayContracts.forEach(function(c,i){
     var strike=c.strike;
-    var bid=c.bid||0,ask=c.ask||0;
-    var prem=bid>0&&ask>0?parseFloat(((bid+ask)/2).toFixed(2)):parseFloat((c.lastPrice||0).toFixed(2));
-    if(prem<=0) prem=parseFloat((c.lastPrice||0).toFixed(2));
+    var bid=parseFloat((c.bid||0).toFixed(2));
+    var ask=parseFloat((c.ask||0).toFixed(2));
+    var last=parseFloat((c.lastPrice||0).toFixed(2));
+    // Always prefer bid/ask mid for premium accuracy
+    var prem;
+    if(bid>0&&ask>0){
+      prem=parseFloat(((bid+ask)/2).toFixed(2));
+    } else if(last>0){
+      prem=last;
+    } else {
+      prem=0.01;
+    }
     var roc=strike>0&&prem>0?parseFloat(((prem/strike)*100).toFixed(2)):0;
     // Greeks - use actual values or calculate per-strike if null
     var rawDelta=c.delta;
@@ -1060,12 +1102,17 @@ function renderRealChain(stock,data,mode,exp){
     var calcTheta=prem>0?parseFloat(((prem/exp.dte)*-1).toFixed(3)):0;
     var delta=rawDelta!=null?parseFloat(rawDelta.toFixed(2)):calcDelta;
     var theta=rawTheta!=null?parseFloat(rawTheta.toFixed(3)):calcTheta;
-    var ivNum=rawIV!=null?parseFloat((rawIV*100).toFixed(1)):calcIVRaw;
+    // Calculate IV fresh from bid/ask mid using Black-Scholes (more accurate than Yahoo's stored IV)
+    var T=exp.dte/365;
+    var isCall=mode==="cc";
+    var bsIV=prem>0&&strike>0&&stock.price>0?calcIV(prem,stock.price,strike,T,isCall):0;
+    var ivNum=bsIV>0?bsIV:(rawIV!=null?parseFloat((rawIV*100).toFixed(1)):calcIVRaw);
+    ivNum=Math.max(1,Math.min(999,ivNum));
     var iv=ivNum+"%";
     var oi=c.openInterest!=null?c.openInterest:0;
-    var oiStr=oi>0?(oi>=1000?parseFloat((oi/1000).toFixed(1))+"K":oi):"-";
+    var oiStr=oi>=1000?parseFloat((oi/1000).toFixed(1))+"K":String(oi);
     var vol=c.volume!=null?c.volume:0;
-    var volStr=vol>0?(vol>=1000?parseFloat((vol/1000).toFixed(1))+"K":vol):"-";
+    var volStr=vol>=1000?parseFloat((vol/1000).toFixed(1))+"K":String(vol);
     var isBest=i===bestIdx;
     var isATM=Math.abs(strike-stock.price)<(stock.price*0.02);
     var rowBg=isBest?"rgba(245,158,11,0.08)":isATM?"rgba(59,130,246,0.04)":"transparent";
@@ -1077,7 +1124,7 @@ function renderRealChain(stock,data,mode,exp){
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+iv+'</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
-      +'<span style="color:#334155">'+volStr+'</span>'
+      +'<span style="color:#475569">'+volStr+'</span>'
       +'</div>';
     if(isBest){
       var exp=EXPIRATIONS[state.activeExp];
