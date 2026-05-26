@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v32-VERCEL</title>
+<title>WheelPicks v33-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v32</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v33</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -867,7 +867,7 @@ function renderChainRows(stock,vals,dteFactor,expDte){
       +'<span style="color:#94a3b8">'+theta+'</span>'
       +'<span style="color:#94a3b8">'+ivNum+'%</span>'
       +'<span style="color:#475569">'+oiStr+'</span>'
-      +'<span style="color:#334155">-</span>'
+      +'<span style="color:#475569">-</span>'
       +'</div>';
     if(isBest) updateTradeIdea(stock,strike,prem,delta,theta,ivNum+"%",exp.label,exp.dte);
   });
@@ -963,13 +963,6 @@ function fetchRealChain(ticker,expTs,callback){
       if(!optionsCache[ticker+"_0"]) optionsCache[ticker+"_0"]=data;
       callback(data, cacheSource);
     }catch(e){
-      // Try base cache as fallback
-      var baseKey2=ticker+"_0";
-      if(expTs&&optionsCache[baseKey2]){
-        var baseData=optionsCache[baseKey2];
-        callback(baseData, "memory");
-        return;
-      }
       console.log("Options parse error:",e.message);
       callback(null,"");
     }
