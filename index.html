@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v24-SUPABASE</title>
+<title>WheelPicks v26-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v24</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v26</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -262,14 +262,14 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 // ---------- SUPABASE / FETCH ----------
 var SUPABASE_URL="https://qpcugczsqsjnodlgdver.supabase.co";
 var SUPABASE_KEY="sb_publishable__3Rr8ck68b4x95x5Grve5g_VjubKDTT";
-var PROXY=SUPABASE_URL+"/functions/v1/options-proxy";
+// VERCEL_URL will be replaced with actual Vercel deployment URL after deploy
+var VERCEL_URL="https://wheelpicks-api.vercel.app";
+var PROXY=VERCEL_URL+"/api/proxy";
 
 function supaFetch(p){
   var qs=Object.keys(p).map(function(k){return k+"="+encodeURIComponent(p[k]);}).join("&");
   return fetch(PROXY+"?"+qs,{
     headers:{
-      "apikey":SUPABASE_KEY,
-      "Authorization":"Bearer "+SUPABASE_KEY,
       "Content-Type":"application/json"
     }
   });
@@ -390,16 +390,31 @@ var EARNINGS = {
   XLK:"N/A"
 };
 
-var EXPIRATIONS = [
-  {label:"May 15 (7d)",dte:7},
-  {label:"May 22 (14d)",dte:14},
-  {label:"May 29 (21d)",dte:21},
-  {label:"Jun 5 (28d)",dte:28},
-  {label:"Jun 12 (35d)",dte:35},
-  {label:"Jun 18 (41d)",dte:41},
-  {label:"Jun 26 (49d)",dte:49},
-  {label:"Jul 17 (70d)",dte:70}
-];
+// Dynamically generate 8 expiration dates from today
+// Finds the nearest Friday to each target DTE (7,14,21,28,35,42,49,70)
+function buildExpirations(){
+  var today=new Date();
+  today.setHours(0,0,0,0);
+  var targetDtes=[7,14,21,28,35,42,49,70];
+  var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return targetDtes.map(function(dte){
+    var target=new Date(today);
+    target.setDate(today.getDate()+dte);
+    // Snap to nearest Friday (day 5)
+    var day=target.getDay();
+    var diff=5-day;
+    if(diff<-2) diff+=7;   // prefer snapping forward if close
+    if(diff>4)  diff-=7;
+    target.setDate(target.getDate()+diff);
+    // Ensure we never go into the past
+    if(target<=today){target.setDate(target.getDate()+7);}
+    var actualDte=Math.round((target-today)/(1000*60*60*24));
+    var label=months[target.getMonth()]+" "+target.getDate()+" ("+actualDte+"d)";
+    var ts=Math.floor(target.getTime()/1000);
+    return {label:label,dte:actualDte,ts:ts};
+  });
+}
+var EXPIRATIONS=buildExpirations();
 
 var FILTERS = {
   "All": function(s){return true;},
@@ -1070,16 +1085,18 @@ function loadChainForExp(stock,exp){
     if(optionsCache[baseKey]&&optionsCache[baseKey].expirations&&optionsCache[baseKey].expirations.length){
       var exps=optionsCache[baseKey].expirations.slice().sort(function(a,b){return a-b;});
       var now=Math.floor(Date.now()/1000);
-      // Filter to only future expirations
       var futureExps=exps.filter(function(ts){return ts>now;});
       if(!futureExps.length) futureExps=exps;
-      // Find the expiration whose actual DTE is closest to our target DTE
+      // Find the expiration closest to our target DTE
       var minDiff=999999999;
       futureExps.forEach(function(ts){
         var actualDte=Math.round((ts-now)/86400);
         var diff=Math.abs(actualDte-exp.dte);
         if(diff<minDiff){minDiff=diff;expTs=ts;}
       });
+    } else {
+      // No base cache yet — use the pre-calculated timestamp from EXPIRATIONS
+      expTs=exp.ts||null;
     }
     // Only clear non-base specific expiration cache
     var cacheKey=stock.ticker+"_"+(expTs||"0");
@@ -1197,7 +1214,7 @@ function fetchAI(type){
     // Call Gemini through Supabase to avoid CORS
     fetch(PROXY+"?type=gemini_news",{
       method:"POST",
-      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt:prompt})
     })
     .then(function(r){return r.json();})
@@ -1262,7 +1279,7 @@ function fetchAI(type){
     var dp=parseFloat(((stock.price-bb)/stock.price*100).toFixed(1));
     fetch(PROXY+"?type=gemini_sellers",{
       method:"POST",
-      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt:"Analyze "+stock.ticker+" for wheel strategy. Price $"+stock.price+", RSI "+stock.rsi+". Sell $"+bs+" "+(stock.mode==="csp"?"CSP":"CC")+" "+exp.label+" for $"+bp+" ("+br+"% ROC, $"+bb+" breakeven, "+dp+"% protection). 2 paragraphs: entry quality, trade guidance. Plain text."})
     })
     .then(function(r){return r.json();})
