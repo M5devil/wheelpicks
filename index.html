@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v35-VERCEL</title>
+<title>WheelPicks v37-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v35</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v37</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -311,13 +311,13 @@ function calcIV(price,S,K,T,isCall){
 
 var STOCKS = [
   {ticker:"CLX",name:"Clorox",sector:"Consumer Staples",price:86.12,rsi:25.38,strike:80.00,premium:1.18,dte:44,roc:1.47,signal:"Oversold",mode:"csp",mcap:"$20.1B",desc:"Clorox manufactures consumer products across household cleaning and lifestyle segments including bleach, Hidden Valley, and Glad brands."},
-  {ticker:"RBLX",name:"Roblox",sector:"Technology",price:44.04,rsi:29.21,strike:41.00,premium:2.19,dte:38,roc:5.34,signal:"Oversold",mode:"csp",mcap:"$27.8B",desc:"Roblox is an online platform and game creation system hosting millions of user-created experiences globally."},
+  {ticker:"RBLX",name:"Roblox",sector:"Technology",price:44.04,rsi:29.21,strike:41.00,premium:2.19,dte:38,roc:5.34,signal:"Oversold",mode:"csp",mcap:"$25.1B",desc:"Roblox is an online platform and game creation system hosting millions of user-created experiences globally."},
   {ticker:"NKE",name:"Nike",sector:"Consumer Discretionary",price:43.06,rsi:30.44,strike:41.00,premium:1.17,dte:38,roc:2.84,signal:null,mode:"csp",mcap:"$65.2B",desc:"Nike designs, markets and sells athletic footwear, apparel, equipment and accessories globally."},
   {ticker:"MCD",name:"McDonalds",sector:"Consumer Discretionary",price:285.17,rsi:31.76,strike:275.00,premium:5.23,dte:38,roc:1.90,signal:null,mode:"csp",mcap:"$204.3B",desc:"McDonalds operates and franchises restaurants worldwide with over 40,000 locations globally."},
-  {ticker:"NFLX",name:"Netflix",sector:"Communication Services",price:87.89,rsi:34.14,strike:87.00,premium:2.48,dte:44,roc:2.84,signal:null,mode:"csp",mcap:"$378.1B",desc:"Netflix is a streaming service with over 260 million paid memberships offering TV series, documentaries, and films."},
+  {ticker:"NFLX",name:"Netflix",sector:"Communication Services",price:87.89,rsi:34.14,strike:87.00,premium:2.48,dte:44,roc:2.84,signal:null,mode:"csp",mcap:"$37.4B",desc:"Netflix is a streaming service with over 260 million paid memberships offering TV series, documentaries, and films."},
   {ticker:"HSY",name:"Hershey",sector:"Consumer Staples",price:184.91,rsi:34.82,strike:180.00,premium:3.85,dte:31,roc:2.14,signal:null,mode:"csp",mcap:"$25.1B",desc:"Hershey is the largest chocolate manufacturer in North America with brands including Reeses and Kit Kat."},
-  {ticker:"LCID",name:"Lucid Group",sector:"Automotive",price:6.25,rsi:34.90,strike:6.00,premium:0.61,dte:38,roc:10.17,signal:null,mode:"csp",mcap:"$18.2B",desc:"Lucid Group designs and builds luxury electric vehicles. The flagship Lucid Air competes in the premium EV segment."},
-  {ticker:"SHOP",name:"Shopify",sector:"Technology",price:107.63,rsi:36.05,strike:107.00,premium:3.56,dte:39,roc:3.32,signal:null,mode:"csp",mcap:"$138.4B",desc:"Shopify provides a commerce platform allowing businesses to start and grow retail businesses globally."},
+  {ticker:"LCID",name:"Lucid Group",sector:"Automotive",price:6.25,rsi:34.90,strike:6.00,premium:0.61,dte:38,roc:10.17,signal:null,mode:"csp",mcap:"$2.1B",desc:"Lucid Group designs and builds luxury electric vehicles. The flagship Lucid Air competes in the premium EV segment."},
+  {ticker:"SHOP",name:"Shopify",sector:"Technology",price:107.63,rsi:36.05,strike:107.00,premium:3.56,dte:39,roc:3.32,signal:null,mode:"csp",mcap:"$124.8B",desc:"Shopify provides a commerce platform allowing businesses to start and grow retail businesses globally."},
   {ticker:"HD",name:"Home Depot",sector:"Consumer Discretionary",price:315.42,rsi:36.57,strike:300.00,premium:8.45,dte:44,roc:2.82,signal:null,mode:"csp",mcap:"$313.6B",desc:"Home Depot is the worlds largest home improvement retailer with over 2,300 stores in the US, Canada, and Mexico."},
   {ticker:"GIS",name:"General Mills",sector:"Consumer Staples",price:34.55,rsi:36.78,strike:32.50,premium:0.60,dte:44,roc:1.85,signal:null,mode:"csp",mcap:"$20.3B",desc:"General Mills manufactures consumer foods including Cheerios, Wheaties, Betty Crocker, Pillsbury, and Haagen-Dazs."},
   {ticker:"JNJ",name:"Johnson and Johnson",sector:"Healthcare",price:225.55,rsi:38.26,strike:220.00,premium:3.45,dte:31,roc:1.57,signal:null,mode:"csp",mcap:"$543.2B",desc:"Johnson and Johnson is a healthcare giant focused on pharmaceuticals and MedTech with key drugs Stelara and Darzalex."},
@@ -329,7 +329,7 @@ var STOCKS = [
   {ticker:"PYPL",name:"PayPal",sector:"Fintech",price:46.49,rsi:41.33,strike:46.00,premium:2.34,dte:38,roc:5.08,signal:null,mode:"csp",mcap:"$67.4B",desc:"PayPal enables digital and mobile payments worldwide. Venmo, Braintree, and Honey are key subsidiary brands."},
   {ticker:"HRL",name:"Hormel Foods",sector:"Consumer Staples",price:20.93,rsi:41.72,strike:20.00,premium:0.50,dte:44,roc:2.50,signal:null,mode:"csp",mcap:"$11.4B",desc:"Hormel manufactures consumer food products including Spam, Skippy, and Applegate brands."},
   {ticker:"T",name:"AT&T",sector:"Communication Services",price:25.90,rsi:42.67,strike:25.00,premium:0.40,dte:48,roc:1.58,signal:null,mode:"csp",mcap:"$185.3B",desc:"AT&T provides telecommunications services including mobile, broadband, and fiber internet across the US."},
-  {ticker:"PLTR",name:"Palantir",sector:"Technology",price:135.91,rsi:42.89,strike:130.00,premium:5.80,dte:38,roc:4.46,signal:null,mode:"csp",mcap:"$293.5B",desc:"Palantir builds software platforms for government and commercial clients through Gotham, Foundry, and AIP products."},
+  {ticker:"PLTR",name:"Palantir",sector:"Technology",price:135.91,rsi:42.89,strike:130.00,premium:5.80,dte:38,roc:4.46,signal:null,mode:"csp",mcap:"$308.6B",desc:"Palantir builds software platforms for government and commercial clients through Gotham, Foundry, and AIP products."},
   {ticker:"BMY",name:"Bristol Myers Squibb",sector:"Healthcare",price:56.95,rsi:43.04,strike:55.00,premium:1.22,dte:44,roc:2.22,signal:null,mode:"csp",mcap:"$113.9B",desc:"Bristol Myers Squibb focuses on cancer, hematology, and immunology with key drugs Eliquis and Opdivo."},
   {ticker:"SLV",name:"Silver ETF",sector:"Commodities",price:65.91,rsi:43.10,strike:62.50,premium:3.10,dte:57,roc:4.96,signal:null,mode:"csp",mcap:"ETF",desc:"The iShares Silver Trust tracks the price of silver bullion providing cost-effective exposure to physical silver."},
   {ticker:"PFE",name:"Pfizer",sector:"Healthcare",price:26.45,rsi:43.66,strike:25.00,premium:0.44,dte:44,roc:1.76,signal:null,mode:"csp",mcap:"$149.1B",desc:"Pfizer is a global biopharmaceutical company with products including Paxlovid, Eliquis, Prevnar, and Vyndamax."},
@@ -351,13 +351,13 @@ var STOCKS = [
   {ticker:"CVX",name:"Chevron",sector:"Energy",price:192.64,rsi:52.96,strike:185.00,premium:4.50,dte:44,roc:2.43,signal:null,mode:"csp",mcap:"$352.8B",desc:"Chevron is an integrated energy company engaged in oil, natural gas, and geothermal energy in over 180 countries."},
   {ticker:"CL",name:"Colgate-Palmolive",sector:"Consumer Staples",price:86.33,rsi:53.27,strike:84.00,premium:1.17,dte:31,roc:1.40,signal:null,mode:"csp",mcap:"$72.5B",desc:"Colgate-Palmolive manufactures Colgate toothpaste, Palmolive soap, Speed Stick, and Hills pet nutrition products."},
   {ticker:"JPM",name:"JPMorgan Chase",sector:"Financial Services",price:309.40,rsi:53.57,strike:300.00,premium:5.95,dte:44,roc:1.98,signal:null,mode:"csp",mcap:"$884.2B",desc:"JPMorgan Chase is the largest US bank by assets operating consumer banking, investment banking, and asset management."},
-  {ticker:"COIN",name:"Coinbase",sector:"Fintech",price:197.75,rsi:53.59,strike:185.00,premium:12.93,dte:44,roc:6.99,signal:null,mode:"csp",mcap:"$49.2B",desc:"Coinbase is the largest US cryptocurrency exchange providing tools to buy, sell, and store crypto assets."},
+  {ticker:"COIN",name:"Coinbase",sector:"Fintech",price:197.75,rsi:53.59,strike:185.00,premium:12.93,dte:44,roc:6.99,signal:null,mode:"csp",mcap:"$53.0B",desc:"Coinbase is the largest US cryptocurrency exchange providing tools to buy, sell, and store crypto assets."},
   {ticker:"CRM",name:"Salesforce",sector:"Technology",price:186.99,rsi:53.74,strike:175.00,premium:7.60,dte:44,roc:4.34,signal:null,mode:"csp",mcap:"$181.3B",desc:"Salesforce provides cloud-based CRM software and enterprise applications for sales, service, and marketing."},
   {ticker:"TSLA",name:"Tesla",sector:"Automotive",price:389.37,rsi:54.95,strike:375.00,premium:14.48,dte:44,roc:3.86,signal:null,mode:"csp",mcap:"$1.24T",desc:"Tesla designs and manufactures electric vehicles including Model 3, Y, S, X, and Cybertruck with energy storage systems."},
   {ticker:"ABNB",name:"Airbnb",sector:"Consumer Discretionary",price:139.73,rsi:55.73,strike:134.00,premium:5.38,dte:38,roc:4.01,signal:null,mode:"csp",mcap:"$89.7B",desc:"Airbnb operates an online marketplace connecting hosts with guests seeking short-term lodging in 220 countries."},
   {ticker:"BTI",name:"British American Tobacco",sector:"Consumer Staples",price:59.40,rsi:56.20,strike:55.00,premium:0.55,dte:44,roc:1.00,signal:null,mode:"csp",mcap:"$68.1B",desc:"British American Tobacco manufactures cigarettes and next-generation products including Vuse and Velo globally."},
   {ticker:"PM",name:"Philip Morris",sector:"Consumer Staples",price:169.46,rsi:56.97,strike:165.00,premium:4.90,dte:44,roc:2.97,signal:null,mode:"csp",mcap:"$262.8B",desc:"Philip Morris sells tobacco and nicotine products internationally including IQOS heated tobacco and ZYN pouches."},
-  {ticker:"DKNG",name:"DraftKings",sector:"Consumer Discretionary",price:24.17,rsi:57.19,strike:22.50,premium:1.31,dte:38,roc:5.80,signal:null,mode:"csp",mcap:"$11.6B",desc:"DraftKings is a digital sports entertainment company offering daily fantasy sports, sports betting, and iGaming."},
+  {ticker:"DKNG",name:"DraftKings",sector:"Consumer Discretionary",price:24.17,rsi:57.19,strike:22.50,premium:1.31,dte:38,roc:5.80,signal:null,mode:"csp",mcap:"$11.4B",desc:"DraftKings is a digital sports entertainment company offering daily fantasy sports, sports betting, and iGaming."},
   {ticker:"BAC",name:"Bank of America",sector:"Financial Services",price:53.12,rsi:57.23,strike:51.00,premium:0.88,dte:38,roc:1.73,signal:null,mode:"csp",mcap:"$419.3B",desc:"Bank of America serves consumers, small businesses, and corporations with banking and asset management services."},
   {ticker:"COST",name:"Costco",sector:"Consumer Staples",price:1016.42,rsi:57.54,strike:990.00,premium:21.38,dte:44,roc:2.16,signal:null,mode:"csp",mcap:"$448.9B",desc:"Costco operates membership-based warehouse clubs known for bulk merchandise and the Kirkland Signature label."},
   {ticker:"WMT",name:"Walmart",sector:"Consumer Staples",price:130.79,rsi:58.37,strike:125.00,premium:3.28,dte:45,roc:2.62,signal:null,mode:"csp",mcap:"$1.05T",desc:"Walmart is the worlds largest retailer operating Walmart and Sams Club stores globally with growing e-commerce."},
@@ -368,20 +368,20 @@ var STOCKS = [
   {ticker:"LLY",name:"Eli Lilly",sector:"Healthcare",price:988.87,rsi:61.79,strike:950.00,premium:28.45,dte:44,roc:2.99,signal:null,mode:"csp",mcap:"$938.2B",desc:"Eli Lilly has blockbuster drugs including Mounjaro and Zepbound for weight loss and Verzenio for cancer."},
   {ticker:"AAPL",name:"Apple",sector:"Technology",price:284.18,rsi:67.40,strike:275.00,premium:5.35,dte:44,roc:1.95,signal:null,mode:"csp",mcap:"$4.32T",desc:"Apple designs consumer electronics and services including iPhone, Mac, iPad, Apple Watch, and the App Store."},
   {ticker:"MO",name:"Altria",sector:"Consumer Staples",price:72.79,rsi:67.61,strike:72.00,premium:1.33,dte:32,roc:1.84,signal:null,mode:"csp",mcap:"$128.3B",desc:"Altria manufactures and sells cigarettes and nicotine pouches in the US through Marlboro and on! brands."},
-  {ticker:"ROKU",name:"Roku",sector:"Technology",price:124.41,rsi:69.72,strike:121.00,premium:5.03,dte:38,roc:4.15,signal:null,mode:"csp",mcap:"$17.3B",desc:"Roku is a streaming platform company selling devices and operating the Roku Channel through advertising."},
-  {ticker:"PINS",name:"Pinterest",sector:"Communication Services",price:22.28,rsi:72.00,strike:25.00,premium:1.01,dte:44,roc:4.02,signal:"Overbought",mode:"cc",mcap:"$14.8B",desc:"Pinterest is a visual discovery platform with over 500 million monthly active users expanding shoppable content."},
+  {ticker:"ROKU",name:"Roku",sector:"Technology",price:124.41,rsi:69.72,strike:121.00,premium:5.03,dte:38,roc:4.15,signal:null,mode:"csp",mcap:"$18.1B",desc:"Roku is a streaming platform company selling devices and operating the Roku Channel through advertising."},
+  {ticker:"PINS",name:"Pinterest",sector:"Communication Services",price:22.28,rsi:72.00,strike:25.00,premium:1.01,dte:44,roc:4.02,signal:"Overbought",mode:"cc",mcap:"$12.7B",desc:"Pinterest is a visual discovery platform with over 500 million monthly active users expanding shoppable content."},
   {ticker:"AMD",name:"AMD",sector:"Technology",price:355.26,rsi:72.31,strike:400.00,premium:15.10,dte:38,roc:3.78,signal:"Overbought",mode:"cc",mcap:"$575.3B",desc:"Advanced Micro Devices designs CPUs and GPUs for data center, gaming, and client segments."},
   {ticker:"CAT",name:"Caterpillar",sector:"Industrials",price:904.59,rsi:73.76,strike:960.00,premium:25.28,dte:44,roc:2.63,signal:"Overbought",mode:"cc",mcap:"$441.2B",desc:"Caterpillar manufactures construction and mining equipment, diesel engines, and diesel-electric locomotives."},
-  {ticker:"CSCO",name:"Cisco",sector:"Technology",price:94.30,rsi:74.81,strike:100.00,premium:3.20,dte:38,roc:3.20,signal:"Overbought",mode:"cc",mcap:"$191.8B",desc:"Cisco designs networking hardware, software, and telecommunications equipment pivoting toward cybersecurity."},
+  {ticker:"CSCO",name:"Cisco",sector:"Technology",price:94.30,rsi:74.81,strike:100.00,premium:3.20,dte:38,roc:3.20,signal:"Overbought",mode:"cc",mcap:"$462.1B",desc:"Cisco designs networking hardware, software, and telecommunications equipment pivoting toward cybersecurity."},
   {ticker:"AMZN",name:"Amazon",sector:"Technology",price:273.55,rsi:80.11,strike:290.00,premium:5.18,dte:44,roc:1.78,signal:"Overbought",mode:"cc",mcap:"$2.89T",desc:"Amazon is the worlds largest e-commerce company and cloud provider through AWS, also operating Prime Video."},
-  {ticker:"ZM",name:"Zoom",sector:"Technology",price:109.10,rsi:80.78,strike:120.00,premium:4.18,dte:31,roc:3.48,signal:"Overbought",mode:"cc",mcap:"$33.4B",desc:"Zoom provides video communications software including Meetings, Phone, Chat, and Webinars globally."},
+  {ticker:"ZM",name:"Zoom",sector:"Technology",price:109.10,rsi:80.78,strike:120.00,premium:4.18,dte:31,roc:3.48,signal:"Overbought",mode:"cc",mcap:"$29.9B",desc:"Zoom provides video communications software including Meetings, Phone, Chat, and Webinars globally."},
   {ticker:"GOOGL",name:"Alphabet",sector:"Communication Services",price:388.43,rsi:81.19,strike:410.00,premium:8.75,dte:44,roc:2.13,signal:"Overbought",mode:"cc",mcap:"$4.78T",desc:"Alphabet is the parent of Google, YouTube, Waymo, and DeepMind. Search and YouTube drive the majority of revenue."},
   {ticker:"INTC",name:"Intel",sector:"Technology",price:108.15,rsi:84.57,strike:127.00,premium:5.95,dte:38,roc:4.69,signal:"Overbought",mode:"cc",mcap:"$453.8B",desc:"Intel designs and manufactures CPUs and GPUs for data centers, PCs, and IoT devices under new leadership."},
   // --- Previously NO_DATA, now with full options data ---
-  {ticker:"SQ",name:"Block Inc",sector:"Fintech",price:68.42,rsi:33.10,strike:65.00,premium:2.15,dte:38,roc:3.31,signal:"Oversold",mode:"csp",mcap:"$41.2B",desc:"Block Inc operates Square for merchants, Cash App for consumers, and Spiral for Bitcoin development."},
+  {ticker:"SQ",name:"Block Inc",sector:"Fintech",price:68.42,rsi:33.10,strike:65.00,premium:2.15,dte:38,roc:3.31,signal:"Oversold",mode:"csp",mcap:"$43.0B",desc:"Block Inc operates Square for merchants, Cash App for consumers, and Spiral for Bitcoin development."},
   {ticker:"K",name:"Kellanova",sector:"Consumer Staples",price:80.35,rsi:44.20,strike:77.50,premium:1.55,dte:38,roc:2.00,signal:null,mode:"csp",mcap:"$27.6B",desc:"Kellanova makes snack foods including Pringles, Cheez-It, Pop-Tarts, and Rice Krispies Treats globally."},
   {ticker:"UPWK",name:"Upwork",sector:"Technology",price:8.08,rsi:24.30,strike:7.50,premium:0.45,dte:38,roc:6.00,signal:"Oversold",mode:"csp",mcap:"$1.1B",desc:"Upwork operates the largest freelance marketplace connecting businesses with independent professionals worldwide."},
-  {ticker:"RIVN",name:"Rivian",sector:"Automotive",price:14.52,rsi:42.32,strike:13.00,premium:0.75,dte:38,roc:5.77,signal:null,mode:"csp",mcap:"$14.2B",desc:"Rivian makes electric trucks and SUVs including R1T and R1S, and operates Amazon delivery vans under a major fleet contract."},
+  {ticker:"RIVN",name:"Rivian",sector:"Automotive",price:14.52,rsi:42.32,strike:13.00,premium:0.75,dte:38,roc:5.77,signal:null,mode:"csp",mcap:"$13.8B",desc:"Rivian makes electric trucks and SUVs including R1T and R1S, and operates Amazon delivery vans under a major fleet contract."},
   {ticker:"TMO",name:"Thermo Fisher",sector:"Healthcare",price:448.21,rsi:36.34,strike:430.00,premium:7.80,dte:38,roc:1.81,signal:null,mode:"csp",mcap:"$171.3B",desc:"Thermo Fisher Scientific provides analytical instruments, reagents, and laboratory services to life science researchers."},
   {ticker:"TLT",name:"20yr Treasury ETF",sector:"Bond ETF",price:84.92,rsi:39.41,strike:82.00,premium:1.05,dte:38,roc:1.28,signal:null,mode:"csp",mcap:"ETF",desc:"iShares 20+ Year Treasury Bond ETF tracks long-duration US government bonds, inversely sensitive to interest rates."},
   {ticker:"SNOW",name:"Snowflake",sector:"Technology",price:150.76,rsi:52.36,strike:145.00,premium:4.90,dte:38,roc:3.38,signal:null,mode:"csp",mcap:"$50.2B",desc:"Snowflake provides a cloud data platform enabling data sharing, analytics, and AI workloads across multiple clouds."},
@@ -1221,13 +1221,14 @@ function fetchSinglePrice(ticker,cb){
       var meta=d.chart.result[0].meta;
       var price=meta.regularMarketPrice||meta.price;
       if(price){
-        // Also grab market cap if available
-        var mcap=meta.marketCap||0;
-        var fmcap=formatMcap(mcap);
-        if(fmcap){
-          // Update the stock's mcap
-          for(var j=0;j<STOCKS.length;j++){
-            if(STOCKS[j].ticker===ticker){STOCKS[j].mcap=fmcap;break;}
+        // Extract live market cap if proxy returned it
+        var mcapRaw=meta.marketCap||0;
+        if(mcapRaw>0){
+          var fmcap=formatMcap(mcapRaw);
+          if(fmcap){
+            for(var j=0;j<STOCKS.length;j++){
+              if(STOCKS[j].ticker===ticker){STOCKS[j].mcap=fmcap;break;}
+            }
           }
         }
         cb(parseFloat(price.toFixed(2)),0);
