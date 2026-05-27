@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v34-VERCEL</title>
+<title>WheelPicks v35-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v34</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v35</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -1202,6 +1202,14 @@ function loadChainForExp(stock,exp){
 
 var liveData={},lastUpdated="",valsCache={};
 
+function formatMcap(v){
+  if(!v||v<=0) return null;
+  if(v>=1e12) return "$"+parseFloat((v/1e12).toFixed(2))+"T";
+  if(v>=1e9)  return "$"+parseFloat((v/1e9).toFixed(1))+"B";
+  if(v>=1e6)  return "$"+parseFloat((v/1e6).toFixed(0))+"M";
+  return "$"+v;
+}
+
 function fetchSinglePrice(ticker,cb){
   supaFetch({ticker:ticker,type:"quote"})
   .then(function(r){
@@ -1210,15 +1218,23 @@ function fetchSinglePrice(ticker,cb){
   })
   .then(function(d){
     try{
-      // v8 chart response format
       var meta=d.chart.result[0].meta;
       var price=meta.regularMarketPrice||meta.price;
-      if(price) cb(parseFloat(price.toFixed(2)),0);
-      else throw new Error("no price");
+      if(price){
+        // Also grab market cap if available
+        var mcap=meta.marketCap||0;
+        var fmcap=formatMcap(mcap);
+        if(fmcap){
+          // Update the stock's mcap
+          for(var j=0;j<STOCKS.length;j++){
+            if(STOCKS[j].ticker===ticker){STOCKS[j].mcap=fmcap;break;}
+          }
+        }
+        cb(parseFloat(price.toFixed(2)),0);
+      } else throw new Error("no price");
     }catch(e){throw e;}
   })
   .catch(function(){
-    // Fallback: allorigins proxy
     var url="https://query1.finance.yahoo.com/v8/finance/chart/"+ticker+"?interval=1m&range=1d";
     fetch("https://api.allorigins.win/raw?url="+encodeURIComponent(url))
     .then(function(r){return r.json();})
@@ -1260,9 +1276,11 @@ function fetchAllPrices(){
           if(state.currentStock){
             for(var j=0;j<STOCKS.length;j++){if(STOCKS[j].ticker===state.currentStock.ticker){state.currentStock=STOCKS[j];break;}}
             if(state.liveChainLoaded){
-              // Just update price display — don't re-render chain
+              // Just update price and mcap display — don't re-render chain
               var dp=document.getElementById("d-price");
               if(dp) dp.textContent="$"+state.currentStock.price;
+              var dm=document.getElementById("d-mcap");
+              if(dm&&state.currentStock.mcap) dm.textContent="Market Cap: "+state.currentStock.mcap;
               var detailLU=document.getElementById("detail-last-updated");
               if(detailLU&&lastUpdated) detailLU.textContent="Last updated: "+lastUpdated;
             } else {
