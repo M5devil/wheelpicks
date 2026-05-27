@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WheelPicks v38-VERCEL</title>
+<title>WheelPicks v39-VERCEL</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#04080f;color:#e2e8f0;font-family:sans-serif;min-height:100vh}
@@ -104,7 +104,7 @@ select{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:6px
 
 <div class="nav">
   <div class="logo">📈</div>
-  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v38</span></span>
+  <span class="nav-title">WheelPicks <span style="font-size:9px;color:#22c55e;font-weight:400;margin-left:3px">v39</span></span>
   <div class="nav-right">
     <span id="nav-stats"></span>
     <span id="last-updated" style="color:#475569;font-size:11px;margin-left:8px;cursor:pointer">&#8635; Loading...</span>
@@ -1218,12 +1218,31 @@ function fetchBestPicks(){
       renderList();
       console.log("[best_picks] Updated "+updated+" tickers from live cache");
     }
-    // Poll again in 5 min to catch background refresh completing
+    // Poll again in 5 min
     setTimeout(fetchBestPicks, 5*60*1000);
   })
   .catch(function(){
-    // Retry in 2 min on failure
     setTimeout(fetchBestPicks, 2*60*1000);
+  });
+}
+
+function refreshCacheBatch(offset){
+  offset=offset||0;
+  supaFetch({type:"refresh_cache",offset:offset})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    console.log("[refresh] batch "+d.batch+" cached:"+d.cached+" failed:"+d.failed);
+    if(!d.done&&d.next){
+      // Continue with next batch after 500ms
+      setTimeout(function(){refreshCacheBatch(offset+10);},500);
+    } else {
+      // All done — fetch best picks to update list
+      console.log("[refresh] Complete — updating list cards");
+      setTimeout(fetchBestPicks,1000);
+    }
+  })
+  .catch(function(e){
+    console.log("[refresh] batch error",e);
   });
 }
 
@@ -1318,7 +1337,10 @@ function fetchAllPrices(){
           // Fetch live best picks once after first full price load
           if(!window._bestPicksFetched){
             window._bestPicksFetched=true;
-            setTimeout(fetchBestPicks, 1000);
+            // First get whatever is already cached
+            setTimeout(fetchBestPicks, 500);
+            // Then refresh stale/missing tickers in background (batched to avoid timeout)
+            setTimeout(function(){refreshCacheBatch(0);}, 2000);
           }
         }
       });
